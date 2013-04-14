@@ -1,6 +1,5 @@
 #everything is relative to 'center of mass'
 import numpy as np
-
 class chassis():
   #   5 0
   #  4   1
@@ -38,18 +37,61 @@ class chassis():
     #slurp deets from file
 
     if robotFile:
-      f = open(robotFile, 'r')
-      for line in f:
-        line = line.strip()
-        print len(line)
-        if (len(line) is 0) | (line[0] is '#'): 
-          print "here"
-          continue
-        arr = np.array([x.strip() for x in line.split([',','|'])])
-        #arr.shape = (2,3)
-        print arr 
-
+      readRobotFile(robotFile)
+        
+def readRobotFile(robotFile):
+  f = open(robotFile, 'r')
+  legParams = []
   
-      
-  
+  #Clean up the input file
+  for line in f:
+    line = line.strip()
+    if (len(line) is 0) or (line[0] is '#'): continue
+    legParams.append([[float(param) for param in limbParams.split(',')] for limbParams in line.split('|')])
+  centerToCoxaVector = np.array([[0.]*3]*6)
+  coxaToFemurVector = np.array([[0.]*5]*6)
+  femurToTibiaVector = np.array([[0.]*5]*6)
+  tibiaToEndVector = np.array([[0.]*5]*6)
 
+  numLegDefs = len(legParams)
+  #Consider possible ways to parse
+  if numLegDefs is 1:
+    #will need some sort of rotate angle procedure. Math is hard
+    raise NotImplementedError, "Haven't made 1 leg loading yet"
+    
+  elif numLegDefs is 2:
+    #legs 0 and 1 have already been defined
+    for i in xrange(numLegDefs):
+      centerToCoxaVector[i] = np.array(legParams[i][0])
+      coxaToFemurVector[i] = np.array(legParams[i][1])
+      femurToTibiaVector[i] = np.array(legParams[i][2])
+      tibiaToEndVector[i] = np.array(legParams[i][3])
+    
+    #Leg 2 is the overX-flip for leg 0
+    centerToCoxaVector[2] = flipVectorOverX(centerToCoxaVector[0])
+    coxaToFemurVector[2] = coxaToFemurVector[0]
+    femurToTibiaVector[2] = femurToTibiaVector[0] 
+    tibiaToEndVector[2] = tibiaToEndVector[0]
+
+    #Leg 3 is the overY-flip of leg 1
+    #Leg 4 is the overY-flip of leg 2
+    #Leg 5 is the overY-flip of leg 0
+    for i in xrange(3):
+      centerToCoxaVector[5-i] = flipVectorOverY(centerToCoxaVector[i])
+      coxaToFemurVector[5-i] = coxaToFemurVector[i]
+      femurToTibiaVector[5-i] = femurToTibiaVector[i] 
+      tibiaToEndVector[5-i] = tibiaToEndVector[i]
+
+  elif numLegDefs is 3:
+    raise NotImplementedError, "Haven't made 3 leg loading yet"
+  elif numLegDefs is 4:
+    raise NotImplementedError, "Haven't made 4 leg loading yet"
+  elif numLegDefs is 6:
+    raise NotImplementedError, "Haven't made 6 leg loading yet"
+  else:
+    print "# of leg lines (" + str(numLegDefs) +") is not valid. Must be 1,2,3,4,6"
+
+def flipVectorOverX(vector):
+  return [vector[0],-vector[1],vector[2]]
+def flipVectorOverY(vector):
+  return [-vector[0],vector[1],vector[2]] 
