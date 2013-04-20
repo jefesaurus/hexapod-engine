@@ -1,4 +1,16 @@
-#1: centerToCoxa[X,Y,Z] coxaToFemur[X,Y,MaxAngle,MinAngle,Radius] femurToTibia[X,Y,MaxAngle,MinAngle,Radius] tibiaToEnd[X,Y,MaxAngle,MinAngle,Radius]
+#1: chassis[X,Y,Z] coxa[X,Y,Z] femur[X,Y] tibia[X,Y] coxaAngle[Default,Max,Min] femurAngle[Default,Max,Min] tibiaAngle[Default,Max,Min]
 
-1,2,0|.5,0,80,-80,0|2,0,80,-80,0|3,0,80,-80,0
-1.5,0,0|.5,0,80,-80,0|2,0,80,-80,0|3,0,80,-80,0
+#Coxa angles are relative to a top down view of the robot facing forward(on the face of a clock; 0 is at 3:00)
+#femur/tibia angles are relative to a back to front view of the robot facing forward(on the face of a clock; 0 is at 3:00)
+
+#Definition for leg 0
+1,2,0|0,.5,-.25|0,1.5|0,2|0,60,-60|0,60,-60|0,60,-60
+#Definition for leg 1
+1.5,0,0|0,.5,-.25|0,1.5|0,2|0,60,-60|0,60,-60|0,60,-60
+#Definition for leg 2
+
+
+#The following legs are on the reverse side of the hex, so ...
+#Definition for leg 3
+#Definition for leg 4
+#Definition for leg 5

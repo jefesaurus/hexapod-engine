@@ -1,4 +1,5 @@
 from chassis import *
 
 
-x = chassis('sampleBot.txt')
+x = readRobotFile('sampleBot.txt')
+
