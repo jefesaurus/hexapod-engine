@@ -12,7 +12,7 @@ class chassis():
   pitch = 0 
   cosPitch = None
   sinPitch = None
-  roll = 0 
+  roll = 0
   cosRoll = None
   sinRoll = None
   transformMat = None
@@ -21,12 +21,12 @@ class chassis():
   radius = [1., .5, 1.5, 2]
   displacement = [-.5,0,0,0]
 
-  theta = [[0, 0, pi/4, -pi/2],
+  theta = [[0, pi/6, pi/4, -pi/2],
           [pi/3, 0, pi/4, -pi/2],
-          [2*pi/3, 0, pi/4, -pi/2],
-          [pi, 0, pi/4, -pi/2],
+          [2*pi/3, -pi/6, pi/4, -pi/2],
+          [pi, pi/6, pi/4, -pi/2],
           [4*pi/3, 0, pi/4, -pi/2],
-          [5*pi/3, 0, pi/4, -pi/2]]
+          [5*pi/3, -pi/6, pi/4, -pi/2]]
 
 
   legs = [None]*6
