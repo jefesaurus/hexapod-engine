@@ -22,10 +22,10 @@ def generateTransformMat(y, p, r, pos):
     return np.vstack([np.hstack((rotMat, np.array([pos]).T)), [0,0,0,1]])
 
 class chassis():
-  position = [1,2,3]
+  position = [0,0,0]
 
   yaw = 0
-  pitch = pi/4
+  pitch = 0
   roll = 0
   transformMat = generateTransformMat(yaw, pitch, roll, position)
   inverseTransformMat = np.linalg.inv(transformMat)
@@ -34,12 +34,14 @@ class chassis():
   radius = [.5, 1.5, 2]
   displacement = [0,0,0]
 
-  theta = [[0,   pi/4, -pi/2],
-          [ -pi/6,      pi/4, -pi/2],
+  theta = [[0,   pi/2, -pi/2],
+          [ -pi/6,      pi/2, -pi/2],
           [ pi/6,  pi/4, -pi/2],
           [ 0,   pi/4, -pi/2],
           [ -pi/6,      pi/4, -pi/2],
           [ pi/6,  pi/4, -pi/2]]
+  print theta
+
 
   legThetas = np.array(range(6))*pi/3
   legAlphas = np.array([0]*6)
@@ -49,6 +51,8 @@ class chassis():
   legs = [None]*6
   legDHMats = [None]*6        #Goes from leg frame to chassis frame
   inverseLegDHMats = [None]*6 #Goes from chassis frame to leg frame
+
+
 
   def __init__(self): 
     for i in xrange(len(self.legs)):
@@ -76,12 +80,12 @@ class chassis():
   def envToLeg(self, point, leg):
     if len(point) is 3:
       point = np.append(point, [1])
-    return np.dot(self.inverseLegDHMats[leg],self.inverseTransformMat,point)
+    return np.dot(np.dot(self.inverseLegDHMats[leg],self.inverseTransformMat),point)[:3]
 
   def legToEnv(self, point, leg):
     if len(point) is 3:
       point = np.append(point, [1])
-    #return np.dot(self.legDHMats[leg],point)
-    return np.dot(np.dot(self.transformMat,self.legDHMats[leg]),point)
+    return np.dot(np.dot(self.transformMat,self.legDHMats[leg]),point)[:3]
 
-
+  def getAngles(self, point, leg):
+    return self.legs[leg].IK(self.envToLeg(point, leg))

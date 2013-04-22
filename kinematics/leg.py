@@ -1,5 +1,5 @@
 import numpy as np
-from math import sin,cos
+from math import sin,cos,acos,asin,atan,sqrt,pi,atan2
 
 def getUnfinishedDHMat(a, r, d):
   ca = cos(a)
@@ -35,7 +35,6 @@ class leg():
   femurDHP = None
   tibiaDHP = None
 
-    
   def FKEndPoint(self, t):
     return np.dot(finishDHMat(self.coxaDHP,t[0]),finishDHMat(self.femurDHP,t[1]),finishDHMat(self.tibiaDHP,t[2]),np.array([0,0,0,1]))[:3]
 
@@ -47,15 +46,16 @@ class leg():
 
   #Does IK assuming point is relative to leg
   def IK(self, point):
-    #Get in reference frame of coxa
-    #Find combined axial offset of tibia and femur
-    #Project point into axis of coxa
-    #inverseChassisDH = finishDHmat(self, ch
-    #inFrame = np.dot(self.inverseChassisDH, np.append(point, [1]))
-    #Ignore Z value, and use only the axial offsets, with the X and Y coords
-    #coxaAngle = np.arctan2(inFrame[1],inFrame[0])+np.arcsin((d[2]+d[3])/np.sqrt(inFrame[0]**2+inFrame[1]**2))   
-    #Calculate a new inverseCoxaDH, and project point into it
-    pass
-    #Now we should only have to care about Z and X
+    #Ignore Z value and use only the axial offsets, with the X and Y coords to get the coxa angle
+    coxaAngle = np.arctan2(point[1],point[0])+np.arcsin((self.d[1]+self.d[2])/np.sqrt(point[0]**2+point[1]**2))   
 
+    #Calculate the inverse coxaDH, and apply to the point to hop into the femur coordinate system
+    femurPoint = np.dot(np.linalg.inv(finishDHMat(self.coxaDHP, coxaAngle)), np.append(point,[1]))
+
+    #Now we should only have to care about Y and X
+    #Only two possibilities from here on
+    footDist = femurPoint[0]**2+femurPoint[1]**2
+    innerTibiaAngle = acos((self.r[1]**2+self.r[2]**2-footDist)/(2*self.r[1]*self.r[2]))
+    femurAngle = asin(self.r[2]*sin(innerTibiaAngle)/sqrt(footDist))+atan2(femurPoint[1],femurPoint[0])
+    return (coxaAngle,femurAngle,innerTibiaAngle-pi)
 
