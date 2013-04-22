@@ -36,7 +36,7 @@ class leg():
   tibiaDHP = None
 
   def FKEndPoint(self, t):
-    return np.dot(finishDHMat(self.coxaDHP,t[0]),finishDHMat(self.femurDHP,t[1]),finishDHMat(self.tibiaDHP,t[2]),np.array([0,0,0,1]))[:3]
+    return np.dot(np.dot(finishDHMat(self.coxaDHP,t[0]),finishDHMat(self.femurDHP,t[1]),finishDHMat(self.tibiaDHP,t[2])),np.array([0,0,0,1]))[:3]
 
   def FKAllPoints(self, t):
     femur = finishDHMat(self.coxaDHP,t[0])

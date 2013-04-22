@@ -34,13 +34,12 @@ class chassis():
   radius = [.5, 1.5, 2]
   displacement = [0,0,0]
 
-  theta = [[0,   pi/2, -pi/2],
-          [ -pi/6,      pi/2, -pi/2],
+  theta = [[0,   pi/4, -pi/2],
+          [ -pi/6,      pi/4, -pi/2],
           [ pi/6,  pi/4, -pi/2],
           [ 0,   pi/4, -pi/2],
           [ -pi/6,      pi/4, -pi/2],
           [ pi/6,  pi/4, -pi/2]]
-  print theta
 
 
   legThetas = np.array(range(6))*pi/3
@@ -76,6 +75,13 @@ class chassis():
       for j in xrange(len(legPoints) - 1):
         segments.append((legPoints[j], legPoints[j+1]))
     return segments
+
+  def getFeet(self):
+    feet = []
+    for i in xrange(len(self.legs)):
+      feet.append(self.legToEnv(self.legs[i].FKEndPoint(self.theta[i]),i))
+    return feet
+    
         
   def envToLeg(self, point, leg):
     if len(point) is 3:
