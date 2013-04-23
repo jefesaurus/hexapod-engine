@@ -51,8 +51,6 @@ class chassis():
   legDHMats = [None]*6        #Goes from leg frame to chassis frame
   inverseLegDHMats = [None]*6 #Goes from chassis frame to leg frame
 
-
-
   def __init__(self): 
     for i in xrange(len(self.legs)):
       self.legs[i] = leg(self.alpha, self.radius, self.displacement)
@@ -82,7 +80,6 @@ class chassis():
       feet.append(self.legToEnv(self.legs[i].FKEndPoint(self.theta[i]),i))
     return feet
     
-        
   def envToLeg(self, point, leg):
     if len(point) is 3:
       point = np.append(point, [1])
