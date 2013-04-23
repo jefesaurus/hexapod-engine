@@ -2,6 +2,8 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 from math import pi
 from chassis import *
 from random import random
@@ -12,9 +14,9 @@ ax = fig.gca(projection='3d')
 
 c = chassis()
 
-target = [random()*2-1,random()*2-1,random()+10]
-print target
-angles = [c.getAngles(target, i) for i in range(6)]
+#target = [[random()*3-1.5,random()*3-1.5,random()-3] for i in range(6)]
+target = [[random()*3-1.5,random()*3-1.5,random()-3]]*6
+angles = [c.getAngles(target[i], i) for i in range(6)]
 c.theta = angles
 segments = c.getChassisSegments()
 
@@ -40,8 +42,15 @@ def plotBoundingBox(ax, X, Y, Z):
   for xb, yb, zb in zip(Xb, Yb, Zb):
     ax.plot([xb], [yb], [zb], 'w')
 
+#def update_lines(num, line):
+#  segments = c.getChassisSegments()
+  
+
 plotSegments(ax, segments)
 plotBoundingBox(ax, X, Y, Z)
-#ax.legend()
-plt.show()
 
+#ax.legend()
+
+#line_ani = animation.FuncAnimation(fig, update_lines, 25, fargs=(data, lines), interval=50, blit=False)
+
+plt.show()

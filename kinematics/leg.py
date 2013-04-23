@@ -72,6 +72,7 @@ class leg():
       return (coxaAngle, targetDir, 0)
     else:
       #is dat sum LAW OF COSINES?!
+      #print (self.r[1]**2+self.r[2]**2-target)/(2*self.r[1]*self.r[2])
       thetaA = acos((self.r[1]**2+self.r[2]**2-target)/(2*self.r[1]*self.r[2]))#the 'inner tibia angle'
 
       #WHOAH DAWG, anything but law of sines
