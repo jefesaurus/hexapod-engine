@@ -4,14 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import pi
 from chassis import *
+from random import random
 
 mpl.rcParams['legend.fontsize'] = 10
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-cha = chassis()
+c = chassis()
 
-segments = cha.getChassisSegments()
+target = [random()*2-1,random()*2-1,random()+10]
+print target
+angles = [c.getAngles(target, i) for i in range(6)]
+c.theta = angles
+segments = c.getChassisSegments()
 
 X = []
 Y = []
