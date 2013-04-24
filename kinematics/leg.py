@@ -32,7 +32,7 @@ class leg():
     self.femurDHP = getUnfinishedDHMat(alpha[1],r[1],d[1])
     self.tibiaDHP = getUnfinishedDHMat(alpha[2],r[2],d[2])
 
-    self.range[2] = r[2]
+    self.range[2] = (r[1] - r[2])**2
     self.range[1] = (r[1]+r[2])**2
     self.range[0] = (r[0]+r[1]+r[2])**2 
 
@@ -70,13 +70,18 @@ class leg():
     if target > self.range[1]:
       #Ah balls:
       return (coxaAngle, targetDir, 0)
+    elif target < self.range[2]:
+      return (coxaAngle, 0,0)
     else:
       #is dat sum LAW OF COSINES?!
       #print (self.r[1]**2+self.r[2]**2-target)/(2*self.r[1]*self.r[2])
       thetaA = acos((self.r[1]**2+self.r[2]**2-target)/(2*self.r[1]*self.r[2]))#the 'inner tibia angle'
 
-      #WHOAH DAWG, anything but law of sines
-      thetaB = asin(self.r[2]*sin(thetaA)/sqrt(target))
+      #So yeah, first time I did this, I used law of sines to get the second angle, in so doing, 
+      #I ignored the rule that every kid is taught in like 5th grade that you can't uniquely determine 
+      #the properties of a triangle with an angle and two sides where the angle isn't between the sides....
+      #So I used law of cosines again.
+      thetaB = acos((self.r[1]**2+target-self.r[2]**2)/(2*self.r[1]*sqrt(target)))#the 'inner tibia angle'
 
       solution1 = (coxaAngle,targetDir + thetaB, thetaA - pi)
       #solution2 = (coxaAngle,targetDir - thetaB, pi - thetaA)

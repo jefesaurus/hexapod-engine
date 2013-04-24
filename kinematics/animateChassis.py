@@ -15,7 +15,7 @@ c = chassis()
 
 #target = [[random()*3-1.5,random()*3-1.5,random()-3] for i in range(6)]
 target = [[random()*3-1.5,random()*3-1.5,random()-3]]*6
-angles = [c.getAngles(target[i], i) for i in range(6)]
+angles = [c.getAngles(target[i], i) for i in range(len(c.legs))]
 c.theta = angles
 segments = c.getChassisSegments()
 
@@ -24,9 +24,9 @@ lines = [ax.plot([dat[0][0],dat[1][0]],[dat[0][1],dat[1][1]],[dat[0][2],dat[1][2
 
 def update_lines(num, lines):
   currentAngle = 2*pi*(num%180/180.)
-  newTarget = [[3.5*cos(i*pi/3),3.5*sin(i*pi/3),-1.5] for i in xrange(6)]
-  c.updateAttitude([cos(currentAngle),sin(currentAngle),0],0,0,0)
-  c.theta = [c.getAngles(newTarget[i], i) for i in range(6)]
+  newTarget = [[3*cos(i*pi/3),3*sin(i*pi/3),-1.5] for i in xrange(6)]
+  c.updateAttitude([1.5*sin(currentAngle),1.5*cos(currentAngle),0],0,0,0)
+  c.theta = [c.getAngles(newTarget[i], i) for i in range(len(c.legs))]
   newSegments = c.getChassisSegments()
   for line,data in zip(lines,newSegments):
     line.set_data([[data[0][0],data[1][0]],[data[0][1],data[1][1]]])
@@ -34,8 +34,8 @@ def update_lines(num, lines):
 
 
 
-ax.set_xlim3d([-2.0, 2.0])
-ax.set_ylim3d([-2.0, 2.0])
+ax.set_xlim3d([-3.0, 3.0])
+ax.set_ylim3d([-3.0, 3.0])
 ax.set_zlim3d([-3.0, 0.0])
 
 
