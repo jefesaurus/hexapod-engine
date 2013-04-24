@@ -13,21 +13,25 @@ def finishDHMat(mat, theta):
 
 class leg():
   #Z axis angles
-  a = [None]*3
+  a = np.empty(3)
 
   #Radius
-  r = [None]*3
+  a = np.empty(3)
 
   #Normal offset
-  d = [None]*3
+  d = np.empty(3)
 
   #Ranges
-  range = [None]*3
+  range = np.empty(3)  #first value is overall length of leg squared, second is length of last two joints squared, third is min dist of last two
 
-  def __init__(self, alpha, r, d):
+  #Angle ranges
+  angleRange = np.empty([3,2])
+
+  def __init__(self, alpha, r, d, angleRanges):
     self.a = alpha
     self.r = r
     self.d = d
+    self.angleRange = angleRanges
     self.coxaDHP = getUnfinishedDHMat(alpha[0],r[0],d[0])
     self.femurDHP = getUnfinishedDHMat(alpha[1],r[1],d[1])
     self.tibiaDHP = getUnfinishedDHMat(alpha[2],r[2],d[2])
