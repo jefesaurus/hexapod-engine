@@ -1,20 +1,17 @@
 from chassis import *
 from math import pi,sin,cos
 
-def getNextStep(legNum, chassis, desiredChassis):
-  leg = chassis[legNum]
+def getNextStep(legNum, chassisIn, nextPose):
   #get intersection between reachable areas of currentBody pose and desiredBody pose
   #This represents the viable regions for steps for which these poses can be achieved
   #Body pose is ([x,y,z],roll,pitch,yaw)
-  zStart = chassis.legDHMats[leg][2][3]       #The z position of the hip at the beginning of the step
-  zEnd = desiredChassis.legDHMats[leg][2][3]  #The z position of the hip at the end of the step
-
-
+  zStart = chassisIn.chassisPose.toGlobal(chassisIn.legPose[legNum].position)[2]
+  zEnd = nextPose.toGlobal(chassisIn.legPose[legNum].position)[2]
 
   #Use these heights to determine the reachable regions
-  (innerRadiusStart, outerRadiusStart) = getReachLimits(chassis.legs[legNum], zStart)
+  (innerRadiusStart, outerRadiusStart) = getReachLimits(chassisIn.legs[legNum], zStart)
   if zStart is not zEnd:
-    (innerRadiusEnd, outerRadiusEnd) = getReachLimits(chassis.legs[legNum], zEnd)
+    (innerRadiusEnd, outerRadiusEnd) = getReachLimits(chassisIn.legs[legNum], zEnd)
   else:
     (innerRadiusEnd, outerRadiusEnd) = (innerRadiusStart, outerRadiusStart)
 
@@ -22,6 +19,8 @@ def getNextStep(legNum, chassis, desiredChassis):
   #This assumes the limits overlap. If they don't, we're hosed.
   targetRadius = (innerRadiusStart + outerRadiusStart + innerRadiusEnd + outerRadiusEnd)/4
 
+  #We're still assuming the body is flat....
+  
   
 
 
