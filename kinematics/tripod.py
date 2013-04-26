@@ -1,17 +1,21 @@
 from chassis import *
 from math import pi,sin,cos
 
-def getNextStep(legNum, chassisIn, nextPose):
+def getNextStep(legNum, chassisIn, nextPose, groundZ):
   #get intersection between reachable areas of currentBody pose and desiredBody pose
   #This represents the viable regions for steps for which these poses can be achieved
   #Body pose is ([x,y,z],roll,pitch,yaw)
-  zStart = chassisIn.chassisPose.toGlobal(chassisIn.legPose[legNum].position)[2]
-  zEnd = nextPose.toGlobal(chassisIn.legPose[legNum].position)[2]
+  legPose = chassisIn.legPose[legNum]
+  (xStart,yStart,zStart) = chassisIn.chassisPose.toGlobal(legPose.position)
+  (xEnd,yEnd,zEnd) = nextPose.toGlobal(legPose.position)
 
+  (midX,midY) = ((xStart+xEnd)/2,(yStart+yEnd)/2)
+
+  midAngle = legPose.yaw-(chassisIn.chassisPose.yaw+nextPose.yaw)/2
   #Use these heights to determine the reachable regions
-  (innerRadiusStart, outerRadiusStart) = getReachLimits(chassisIn.legs[legNum], zStart)
+  (innerRadiusStart, outerRadiusStart) = getReachLimits(chassisIn.legs[legNum], zStart, groundZ)
   if zStart is not zEnd:
-    (innerRadiusEnd, outerRadiusEnd) = getReachLimits(chassisIn.legs[legNum], zEnd)
+    (innerRadiusEnd, outerRadiusEnd) = getReachLimits(chassisIn.legs[legNum], zEnd, groundZ)
   else:
     (innerRadiusEnd, outerRadiusEnd) = (innerRadiusStart, outerRadiusStart)
 
@@ -19,14 +23,16 @@ def getNextStep(legNum, chassisIn, nextPose):
   #This assumes the limits overlap. If they don't, we're hosed.
   targetRadius = (innerRadiusStart + outerRadiusStart + innerRadiusEnd + outerRadiusEnd)/4
 
-  #We're still assuming the body is flat....
+  return (midX+targetRadius*sin(midAngle), midY+targetRadius*cos(midAngle), groundZ)
+
   
   
 
 
 #Assumes the max femur angle is positive and the min femur angle is negative
 #Should probably not rely on this...
-def getReachLimits(leg, z):
+def getReachLimits(leg, pointZ, groundZ):
+  z = (pointZ-groundZ)
   zNorm = z**2
   #get min with smallest tibia angle
   minTibiaAngle = max(0, leg.angleRange[2][0]+pi)

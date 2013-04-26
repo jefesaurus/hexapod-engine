@@ -4,11 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-from math import pi,cos,sin
+from math import pi,cos,sin,sqrt
+from random import random
+
 from chassis import *
 from chassisParams import chassisParams
 from pose import pose
-from random import random
+from tripod import *
+from targetHolder import *
+
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
@@ -16,21 +20,58 @@ ax = p3.Axes3D(fig)
 cp = chassisParams()
 c = chassis(cp)
 numLegs = len(c.legs)
+groundZ = -1.5
 
-target = [[random()*3-1.5,random()*3-1.5,random()-3]]*numLegs
-angles = [c.getAngles(target[i], i) for i in range(numLegs)]
+
+velocity = (1,1)
+speed = sqrt(sum(velocity))
+if speed == 0:
+  dir = (0,0)
+else:
+  dir = (velocity[0]/speed,velocity[1]/speed)
+angularVelocity = 1
+stepSize = 1
+startPose = c.chassisPose
+(startX,startY,startZ) = startPose.position
+nextPose = pose((startX+dir[0]*stepSize,startY+dir[1]*stepSize,startZ),(startPose.yaw+angularVelocity,startPose.pitch,startPose.roll))
+
+targets = targetHolder(np.array([getNextStep(i, c, nextPose, groundZ) for i in xrange(numLegs)]))
+
+angles = [c.getAngles(targets.targets[i], i) for i in range(numLegs)]
 segments = c.getChassisSegments(angles)
-
-
 lines = [ax.plot([dat[0][0],dat[1][0]],[dat[0][1],dat[1][1]],[dat[0][2],dat[1][2]])[0] for dat in segments]
 
-def update_lines(num, lines):
-  currentAngle = 2*pi*num/180.
+updates = 100
 
-  legAngle = 2*pi/numLegs
-  newTarget = [[3.25*sin(i*legAngle),3.25*cos(i*legAngle),-1.5] for i in xrange(numLegs)]
-  c.chassisPose = pose((0*1.25*sin(3*currentAngle),0*1.25*cos(3*currentAngle),.5*cos(.5*currentAngle)),(currentAngle,0*3*currentAngle,0*2*currentAngle))
-  newThetas = [c.getAngles(newTarget[i], i) for i in range(len(c.legs))]
+def update_lines(num, lines):
+  #If we have reached the end of this step
+  progress = num/float(updates)
+  if num%updates is 0:
+    currentPose = c.chassisPose
+    (currX,currY,currZ) = currentPose.position
+    nextPose = pose((currX+dir[0]*stepSize,currY+dir[1]*stepSize,currZ),(currentPose.yaw+angularVelocity,currentPose.pitch,currentPose.roll))
+
+    targets.targets = np.array([getNextStep(i, c, nextPose, groundZ) if i in [2*j for j in xrange(numLegs/2)] else targets.targets[i] for i in xrange(numLegs)])
+  elif num%updates is updates/2:
+    currentPose = c.chassisPose
+    (currX,currY,currZ) = currentPose.position
+    nextPose = pose((currX+dir[0]*stepSize,currY+dir[1]*stepSize,currZ),(currentPose.yaw+angularVelocity,currentPose.pitch,currentPose.roll))
+
+    targets.targets = np.array([getNextStep(i, c, nextPose, groundZ) if i in [2*j+1 for j in xrange(numLegs/2)] else targets.targets[i] for i in xrange(numLegs)])
+
+    
+
+  #Update position
+  x = startX + progress*velocity[0]
+  y = startY + progress*velocity[1]
+  z = startZ
+
+  c.chassisPose = pose((x,y,z),(startPose.yaw+progress*angularVelocity,startPose.pitch,startPose.roll))
+
+  #Get IK
+  newThetas = [c.getAngles(targets.targets[i], i) for i in range(numLegs)]
+
+  #Get FK for drawing
   newSegments = c.getChassisSegments(newThetas)
   for line,data in zip(lines,newSegments):
     line.set_data([[data[0][0],data[1][0]],[data[0][1],data[1][1]]])

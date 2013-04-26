@@ -10,7 +10,7 @@ class chassisParams():
   #STATIC PARAMETERS(should never change)
   #Leg parameters:
   #alpha is the relative angles of rotation for the joints. Coxa is pi/2 off femur, which is 0 off tibia, which is 0 off foot
-  numLegs = 500
+  numLegs = 6
   alpha = [[pi/2, 0, 0]]*numLegs
 
   #Radius is the radius of the joints
