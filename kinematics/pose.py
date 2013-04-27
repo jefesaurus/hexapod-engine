@@ -10,8 +10,8 @@ class pose():
   transformMat = None
   inverseTransformMat = None
 
-  def __init__(self, position, (yaw, pitch, roll)):
-    self.position = position
+  def __init__(self, (x,y,z), (yaw, pitch, roll)):
+    self.position = (x,y,z)
     self.yaw = yaw
     self.pitch = pitch
     self.roll = roll
@@ -24,7 +24,7 @@ class pose():
     rotMat = np.array([[cy*cp, cy*sp*sr - sy*cr, cy*sp*cr + sy*sr],
               [sy*cp, sy*sp*sr + cy*cr, sy*sp*cr - cy*sr],
               [-sp, cp*sr, cp*cr]])
-    self.transformMat = np.vstack([np.hstack((rotMat, np.array([position]).T)), [0,0,0,1]])
+    self.transformMat = np.vstack([np.hstack((rotMat, np.array([self.position]).T)), [0,0,0,1]])
     self.inverseTransformMat = np.linalg.inv(self.transformMat)
 
   def toLocal(self, point):
@@ -36,3 +36,6 @@ class pose():
     if len(point) is 3:
       point = np.append(point, [1])
     return np.dot(self.transformMat,point)[:3]
+
+  def copy(self):
+    return pose(self.position,(self.yaw,self.pitch,self.roll))

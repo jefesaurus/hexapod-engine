@@ -71,11 +71,12 @@ class leg():
     #target - range < 0: two solutions
     targetDir = atan2(femurPoint[1],femurPoint[0])
 
+    canReach = 0
     if target > self.range[1]:
       #Ah balls:
-      return (coxaAngle, targetDir, 0)
+      solution1 =  (coxaAngle, targetDir, 0)
     elif target < self.range[2]:
-      return (coxaAngle, 0,0)
+      solution1 =  (coxaAngle, 0,0)
     else:
       #is dat sum LAW OF COSINES?!
       #print (self.r[1]**2+self.r[2]**2-target)/(2*self.r[1]*self.r[2])
@@ -85,9 +86,13 @@ class leg():
       #I ignored the rule that every kid is taught in like 5th grade that you can't uniquely determine 
       #the properties of a triangle with an angle and two sides where the angle isn't between the sides....
       #So I used law of cosines again.
-      thetaB = acos((self.r[1]**2+target-self.r[2]**2)/(2*self.r[1]*sqrt(target)))#the 'inner tibia angle'
+      thetaB = acos((self.r[1]**2+target-self.r[2]**2)/(2*self.r[1]*sqrt(target)))
+
+      reachStatus = thetaB
 
       solution1 = (coxaAngle,targetDir + thetaB, thetaA - pi)
+      canReach = self.range[2] - target
       #solution2 = (coxaAngle,targetDir - thetaB, pi - thetaA)
-      
+    #TODO also return canReach and do something intelligent with it 
     return solution1
+

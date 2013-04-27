@@ -23,14 +23,14 @@ numLegs = len(c.legs)
 groundZ = -1.5
 
 
-velocity = (1,1)
+velocity = (.5,.5)
 speed = sqrt(sum(velocity))
 if speed == 0:
   dir = (0,0)
 else:
   dir = (velocity[0]/speed,velocity[1]/speed)
-angularVelocity = 1
-stepSize = 1
+angularVelocity = 3
+stepSize = .5
 startPose = c.chassisPose
 (startX,startY,startZ) = startPose.position
 nextPose = pose((startX+dir[0]*stepSize,startY+dir[1]*stepSize,startZ),(startPose.yaw+angularVelocity,startPose.pitch,startPose.roll))
@@ -41,7 +41,7 @@ angles = [c.getAngles(targets.targets[i], i) for i in range(numLegs)]
 segments = c.getChassisSegments(angles)
 lines = [ax.plot([dat[0][0],dat[1][0]],[dat[0][1],dat[1][1]],[dat[0][2],dat[1][2]])[0] for dat in segments]
 
-updates = 100
+updates = 20
 
 def update_lines(num, lines):
   #If we have reached the end of this step

@@ -1,5 +1,6 @@
 from leg import *
 from math import pi,sin,cos
+from pose import *
 
 
 class chassis():
@@ -28,6 +29,11 @@ class chassis():
       for j in xrange(len(legPoints) - 1):
         segments.append((legPoints[j], legPoints[j+1]))
     return segments
+
+  #update new pose with deltas
+  def updatePose(self, (dX,dY,dZ),dYaw,dPitch,dRoll):
+    newPose = pose((self.chassisPose.position[0]+dX,self.chassisPose.position[1] + dY, self.chassisPose.position[2] + dZ),(self.chassisPose.yaw+dYaw, self.chassisPose.pitch + dPitch, self.chassisPose.roll+dRoll))
+    self.chassisPose = newPose
 
   #Main FK routine, only returns the feet
   def getFeet(self, theta):
