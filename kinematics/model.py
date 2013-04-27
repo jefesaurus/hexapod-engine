@@ -9,9 +9,9 @@ from tripod import *
 class animatedChassis():
 
   #Parameters
-  groundZ = -1.5
-  velocity = (.05,.00)
-  angularVelocity = 0.05
+  groundZ = -0.5
+  velocity = (.110,.00)
+  angularVelocity = 0.00
   tripod = ((0,2,4),(1,3,5))
   ripple = ((3,),(0,),(4,),(2,),(5,),(1,))                    
   tripple = ((0,),(4,),(2,),(),(),(),(5,),(1,),(3,),(),(),()) #Time stretched tripod
@@ -35,7 +35,7 @@ class animatedChassis():
     dir = (velocity[0]/speed, velocity[1]/speed)
 
   numBins = len(gait)
-  gaitBinTime = 20   #Initial gaitBinTime determines all free parameters. Does change.
+  gaitBinTime = 10   #Initial gaitBinTime determines all free parameters. Does change.
   stepSize = speed*numBins*gaitBinTime
   print stepSize
 

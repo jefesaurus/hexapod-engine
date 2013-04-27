@@ -7,18 +7,21 @@ import matplotlib.animation as animation
 from math import pi,cos,sin,sqrt
 from random import random
 
-from model import *
+from modelNew import *
 
 fig = plt.figure()
 ax = p3.Axes3D(fig)
 
 chassis = animatedChassis()
+chassis.updateVelocity((.01,.00),(.00))
 initialSegments = chassis.step()
 lines = [ax.plot([dat[0][0],dat[1][0]],[dat[0][1],dat[1][1]],[dat[0][2],dat[1][2]])[0] for dat in initialSegments]
+speed = .05
 
 def update_lines(num, lines, chassis):
-  #If we have reached the end of this step
-  #Get FK for drawing
+   
+  chassis.updateVelocity((speed*cos(num/30.), 0*speed*sin(num/30.)),.01)
+
   newSegments = chassis.step()
   for line,data in zip(lines,newSegments):
     line.set_data([[data[0][0],data[1][0]],[data[0][1],data[1][1]]])
