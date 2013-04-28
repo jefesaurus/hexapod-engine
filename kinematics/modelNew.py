@@ -13,9 +13,9 @@ class animatedChassis():
   tripple = ((0,),(4,),(2,),(),(),(),(5,),(1,),(3,),(),(),()) #Time stretched tripod
   wave = ((0,),(1,),(2,),(3,),(4,),(5,))                  #Shitty gait
 
-  maxStepSize = 1 #adjust meeee
-  minStepSize = 0 #adjust meeee tooooo
-  gait = tripple
+  maxStepSize = 1. #adjust meeee
+  minStepSize = .5 #adjust meeee tooooo
+  gait = tripod
 
   #Local state
   cp = chassisParams()
@@ -62,13 +62,13 @@ class animatedChassis():
 
     #Adjust the stepRate and stepSize if stepSize is out of limits
     if self.stepSize > self.maxStepSize:
-      self.stepRate = self.speed/self.maxStepSize
-      self.gaitBinTime = ceil(1./(self.stepRate*self.numBins))
+      stepRate = self.speed/self.maxStepSize
+      self.gaitBinTime = max(1,floor(1./(stepRate*self.numBins)))
       self.stepSize = self.speed*self.gaitBinTime*self.numBins
 
     elif self.stepSize < self.minStepSize:
-      self.stepRate = self.speed/self.minStepSize
-      self.gaitBinTime = ceil(1./(self.stepRate*self.numBins))
+      stepRate = self.speed/self.minStepSize
+      self.gaitBinTime = max(1,floor(1./(stepRate*self.numBins)))
       self.stepSize = self.speed*self.gaitBinTime*self.numBins
 
     self.gaitTime = self.numBins*self.gaitBinTime

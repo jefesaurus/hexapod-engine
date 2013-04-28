@@ -20,7 +20,7 @@ speed = .05
 
 def update_lines(num, lines, chassis):
    
-  chassis.updateVelocity((speed*cos(num/30.), 0*speed*sin(num/30.)),.01)
+  chassis.updateVelocity(((num+1)/80.*speed*cos(num/30.), (num+1)/80.*speed*sin(num/30.)),-.01)
 
   newSegments = chassis.step()
   for line,data in zip(lines,newSegments):
