@@ -16,7 +16,7 @@ class leg():
   a = np.empty(3)
 
   #Radius
-  a = np.empty(3)
+  r = np.empty(3)
 
   #Normal offset
   d = np.empty(3)
