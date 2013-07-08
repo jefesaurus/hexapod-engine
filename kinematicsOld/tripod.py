@@ -2,7 +2,7 @@ from chassis import *
 from math import pi,sin,cos
 
 def getNextStep(legNum, chassisIn, nextPose, groundZ):
-  #get approximate intersection between reachable areas of currentBody pose and desiredBody pose
+  #get intersection between reachable areas of currentBody pose and desiredBody pose
   #This represents the viable regions for steps for which these poses can be achieved
   #Body pose is ([x,y,z],roll,pitch,yaw)
   legPose = chassisIn.legPose[legNum]
@@ -19,11 +19,15 @@ def getNextStep(legNum, chassisIn, nextPose, groundZ):
   else:
     (innerRadiusEnd, outerRadiusEnd) = (innerRadiusStart, outerRadiusStart)
 
-  #Average all of the limits to get the one furthest from them.
+  #Average all of the limits to get the on furthest from them.
   #This assumes the limits overlap. If they don't, we're hosed.
   targetRadius = (innerRadiusStart + outerRadiusStart + innerRadiusEnd + outerRadiusEnd)/4
 
   return (midX+targetRadius*sin(midAngle), midY+targetRadius*cos(midAngle), groundZ)
+
+  
+  
+
 
 #Assumes the max femur angle is positive and the min femur angle is negative
 #Should probably not rely on this...

@@ -16,11 +16,11 @@ chassis = animatedChassis()
 chassis.updateVelocity((.01,.00),(.00))
 initialSegments = chassis.step()
 lines = [ax.plot([dat[0][0],dat[1][0]],[dat[0][1],dat[1][1]],[dat[0][2],dat[1][2]])[0] for dat in initialSegments]
-speed = .05
+speed = .01
 
 def update_lines(num, lines, chassis):
    
-  chassis.updateVelocity(((num+1)/80.*speed*cos(num/30.), (num+1)/80.*speed*sin(num/30.)),-.01)
+  chassis.updateVelocity((speed*cos(num/30.), speed*sin(num/30.)),sin(num/30.)/3.)
 
   newSegments = chassis.step()
   for line,data in zip(lines,newSegments):
@@ -33,6 +33,6 @@ ax.set_ylim3d([-3.0, 3.0])
 ax.set_zlim3d([-3.0, 0.0])
 
 
-line_ani = animation.FuncAnimation(fig, update_lines, 2000, fargs=(lines,chassis), interval=10, blit=False)
+line_ani = animation.FuncAnimation(fig, update_lines, 2000, fargs=(lines,chassis), interval=1, blit=False)
 
 plt.show()

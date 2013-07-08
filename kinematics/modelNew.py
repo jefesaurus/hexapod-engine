@@ -7,14 +7,14 @@ from tripod import *
 class animatedChassis():
 
   #Parameters
-  groundZ = -1.5
+  groundZ = -2.5
   tripod = ((0,2,4),(1,3,5))
   ripple = ((3,),(0,),(4,),(2,),(5,),(1,))                    
   tripple = ((0,),(4,),(2,),(),(),(),(5,),(1,),(3,),(),(),()) #Time stretched tripod
   wave = ((0,),(1,),(2,),(3,),(4,),(5,))                  #Shitty gait
 
-  maxStepSize = 1. #adjust meeee
-  minStepSize = .5 #adjust meeee tooooo
+  maxStepSize = 2. #adjust meeee
+  minStepSize = .001 #adjust meeee tooooo
   gait = tripod
 
   #Local state
