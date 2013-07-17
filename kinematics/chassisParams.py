@@ -14,7 +14,7 @@ class chassisParams():
   alpha = [[pi/2, 0, 0]]*numLegs
 
   #Radius is the radius of the joints
-  radius = [[.5, 1.5, 2]]*numLegs
+  radius = [[.5, 1.5, 1]]*numLegs
 
   #Displacement is the axial offset, could be the height of a servo horn for example
   #(Be sure to account for left side vs right side)
