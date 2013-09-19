@@ -13,5 +13,4 @@ class gait():
   
   def getStatus(self, progress):
     
-
-class gait_action
+    

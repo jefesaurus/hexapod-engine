@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<data type="chassis" path="staging.chassis">
+    <chassis name="default-hex" num-legs="6" symmetry="lateral">
+        <leg name="default-right" position="(1,1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,0,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,-1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,-1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,0,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+    </chassis>
+    <chassis name="12leg-hex" num-legs="12" symmetry="lateral">
+        <leg name="default-right" position="(1,1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,0,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,-1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,-1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,0,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,0,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-right" position="(1,-1,1)" orientation="(0,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,-1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,0,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+        <leg name="default-left" position="(-1,1,1)" orientation="(-pi,0,0)" home="(0,0,0)"/>
+    </chassis>
+</data>

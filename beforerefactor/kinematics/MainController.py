@@ -1,9 +1,9 @@
 import thread
-from math import pi,cos,sin
-from multiprocessing import Process, Queue
-
+from math import pi,cos,sin,sqrt
 from animateChassis import SuperModel
-from utils.getch import _Getch
+from getch import _Getch
+
+from multiprocessing import Process, Queue 
 
 
 def engine(input_queue,output_queue):

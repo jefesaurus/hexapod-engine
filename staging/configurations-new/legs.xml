@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<data type="leg" path="staging.leg">
+    <leg name="default-right" num-joints="3">
+        <segment name="coxa">
+            <a>pi/2</a>
+            <r>.5</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+        <segment name="femur">
+            <a>0</a>
+            <r>1.5</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+        <segment name="tibia">
+            <a>0</a>
+            <r>2</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+    </leg>
+    <leg name="default-left" num-joints="3">
+        <segment name="coxa">
+            <a>pi/2</a>
+            <r>.5</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+        <segment name="femur">
+            <a>0</a>
+            <r>1.5</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+        <segment name="tibia">
+            <a>0</a>
+            <r>2</r>
+            <d>0</d>
+            <servo>DSM-44</servo>
+            <servo-offset-angle>0</servo-offset-angle>
+            <servo-orientation>1</servo-orientation>
+        </segment>
+    </leg>
+</data>

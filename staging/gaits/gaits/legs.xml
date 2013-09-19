@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<data type="">
+    <gait name="tripod" numsteps="2">
+        <leg>
+            <step up="0" down="1"/>
+        </leg>
+        <leg>
+            <step up="1" down="0"/>
+        </leg>
+        <leg>
+            <step up="0" down="1"/>
+        </leg>
+        <leg>
+            <step up="1" down="0"/>
+        </leg>
+        <leg>
+            <step up="0" down="1"/>
+        </leg>
+        <leg>
+            <step up="1" down="0"/>
+        </leg>
+    </gait>
+</data>

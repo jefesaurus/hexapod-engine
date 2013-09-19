@@ -4,7 +4,7 @@ from chassis import *
 from chassisParams import chassisParams
 from tripod import *
 
-class animatedChassis():
+class animated_model():
 
     #Parameters
     groundZ = -2.5
