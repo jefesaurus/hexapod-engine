@@ -1,16 +1,17 @@
 #!/usr/bin/python
 import sympy as sp
+import numpy
 from sympy.utilities import lambdify
-import sympy.core.expr
 from math import pi
 
 # Represents a single link in the Denavit Hartenberg representation of a robotic manipulator
 class Segment:
-  def __init__(self, label, alpha, r, d):
+  def __init__(self, label, alpha=None, r=None, d=None, theta=None):
     self.label = label
     self.alpha = alpha
     self.r = r
     self.d = d
+    self.theta = theta
 
 # takes a list of Denavit Hartenberg parametrized link segments
 # and generates the transformation matrix for each of them
@@ -19,22 +20,23 @@ class Segment:
 def DHMaker(segments):
   dh_matrices = {}
   inverse_dh_matrices = {}
-  theta_labels = [str('theta_'+segment.label) for segment in segments]
-  alpha_labels = [str('alpha_'+segment.label) for segment in segments]
-  r_labels = [str('r_'+segment.label) for segment in segments]
-  d_labels = [str('d_'+segment.label) for segment in segments]
-  label_to_value = {}
-
-  for segment, theta_label, alpha_label, r_label, d_label in zip(segments, theta_labels, alpha_labels, r_labels, d_labels):
-    label = segment.label
-    theta = sp.Symbol(theta_label) # The only real variable. Create a symbol for it
-    alpha = sp.Symbol(alpha_label)
-    r = sp.Symbol(r_label)
-    d = sp.Symbol(d_label)
-    # Stash values for subbing later:
-    label_to_value[alpha] = segment.alpha
-    label_to_value[r] = segment.r
-    label_to_value[d] = segment.d
+  for segment in segments:
+    if segment.theta is not None:
+      theta = segment.theta
+    else:
+      theta = sp.Symbol(str('theta_' + segment.label)) # Create symbols for each variable
+    if segment.alpha is not None:
+      alpha = segment.alpha
+    else:
+      alpha = sp.Symbol(str('alpha_' + segment.label))
+    if segment.r is not None:
+      r = segment.r
+    else:
+      r = sp.Symbol(str('r_' + segment.label))
+    if segment.d is not None:
+      d = segment.d
+    else:
+      d = sp.Symbol(str('d_' + segment.label))
 
     # Components of the dh matrix
     rotation_matrix = sp.Matrix([[sp.cos(theta), -sp.sin(theta)*sp.cos(alpha), sp.sin(theta)*sp.sin(alpha)],
@@ -51,8 +53,8 @@ def DHMaker(segments):
     dh_matrix = sp.Matrix.vstack(sp.Matrix.hstack(rotation_matrix, translation_matrix), last_row)
     inverse_dh_matrix = sp.Matrix.vstack(sp.Matrix.hstack(inverse_rotation, inverse_translation), last_row)
 
-    inverse_dh_matrices[label] = inverse_dh_matrix
-    dh_matrices[label] = dh_matrix
+    inverse_dh_matrices[segment.label] = inverse_dh_matrix
+    dh_matrices[segment.label] = dh_matrix
 
   # Finally, flatten all the matrices into end-to-end transformation matrices
   compound_dh_matrix = sp.eye(4)
@@ -62,15 +64,12 @@ def DHMaker(segments):
   for segment in reversed(segments):
     compound_inverse_dh_matrix *= inverse_dh_matrices[segment.label]
 
-  # Substitute known values(Everything except theta)
-  compound_dh_matrix = compound_dh_matrix.subs(label_to_value)
-  compound_inverse_dh_matrix = compound_inverse_dh_matrix.subs(label_to_value)
-
   # Chop off terms with small coefficients
   compound_dh_matrix = compound_dh_matrix.applyfunc(coeff_chop)
   compound_inverse_dh_matrix = compound_inverse_dh_matrix.applyfunc(coeff_chop)
 
-  return compound_dh_matrix, compound_inverse_dh_matrix, dh_matrices, inverse_dh_matrices, theta_labels
+  required_parameters = list(compound_dh_matrix.atoms(sp.Symbol).union(compound_inverse_dh_matrix.atoms(sp.Symbol)))
+  return compound_dh_matrix, compound_inverse_dh_matrix, required_parameters
 
 # This recursively traverses the input expression
 # Grabs the numerical coefficient of terms and replaces with 0
@@ -89,19 +88,38 @@ def coeff_chop(expr, tol=1e-15):
 
 
 # Returns a ready to use lambda function that takes inputs of the form
-# (x,y,z), (theta0, theta1, theta2...)
+# transform((x,y,z), {theta_label1: val1, theta_label2: val2...}
 # and returns a vector for the transformed coordinates
-def get_transformation_function(segments):
-  coordinate_labels = ['x','y','z']
-  x,y,z = sp.symbols(' '.join(coordinate_labels))
-  coordinate_vector = sp.Matrix([x,y,z,1])
+# LABELS NEED TO MATCH THOSE ON YOUR SEGMENTS. The naming scheme is: PARAMETERNAME_SEGMENTLABEL
+# If you need to remember what these are, it also returns a list of what it expects for evaluatation
+#
+# Optional parameters fixed_endpoint and fixed_basepoint
+# These are for the cases where you already know the point in the frame you are transforming from or to
+# Eg. in FK, the endpoint of the end effector is probably (0,0,0) in its own reference frame or something
+# So you can bake that into the equation a priori
+# Same thing if you only ever want a single origin transformed for the inverse
+def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=None):
+  if fixed_endpoint is None:
+    coordinate_labels = ['x','y','z'] # It is assumed that the inverse will not need any fixed coordinates
+    x_s, y_s, z_s = sp.symbols(' '.join(coordinate_labels))
+    coordinate_vector = sp.Matrix([x_s,y_s,z_s,1])
+  else:
+    coordinate_vector = sp.Matrix([fixed_endpoint[0], fixed_endpoint[1], fixed_endpoint[2], 1])
 
-  dh_mat, inv_dh_mat, _, _, theta_labels = DHMaker(segments)
+  if fixed_basepoint is None:
+    inverse_coordinate_labels = ['inv_x','inv_y','inv_z'] # It is assumed that the inverse will not need any fixed coordinates
+    inv_x_s, inv_y_s, inv_z_s = sp.symbols(' '.join(inverse_coordinate_labels))
+    inverse_coordinate_vector = sp.Matrix([inv_x_s, inv_y_s, inv_z_s,1])
+  else:
+    inverse_coordinate_vector = sp.Matrix([fixed_basepoint[0], fixed_basepoint[1], fixed_basepoint[2], 1])
+
+  dh_mat, inv_dh_mat, var_names = DHMaker(segments)
+  var_names = sorted([str(var) for var in var_names]) # Sort for determinism
   
   # Multiply by the coordinate in the space we are transforming from
   transform_matrix = dh_mat*coordinate_vector
   transform_matrix.row_del(3) #Chop off extra row in result matrix
-  inverse_transform_matrix = inv_dh_mat*coordinate_vector
+  inverse_transform_matrix = inv_dh_mat*inverse_coordinate_vector
   inverse_transform_matrix.row_del(3)
 
   # Numerically eval everything finally
@@ -111,26 +129,42 @@ def get_transformation_function(segments):
   # One more pass of chopping small stuff
   transform_matrix = transform_matrix.applyfunc(coeff_chop)
   inverse_transform_matrix = inverse_transform_matrix.applyfunc(coeff_chop)
-
   # Bake into a lambda func
-  func = lambdify((coordinate_labels, theta_labels), transform_matrix.T, "numpy")
-  inv_func = lambdify((coordinate_labels, theta_labels), inverse_transform_matrix.T, "numpy")
-  return func, inv_func
+  if fixed_endpoint is None:
+    base_func = lambdify((coordinate_labels, var_names), transform_matrix.T, "numpy")
+    func = lambda coords, var_dict: base_func(coords, [var_dict[var_name] for var_name in var_names]).A[0]
+  else:
+    base_func = lambdify([var_names], transform_matrix.T, "numpy")
+    func = lambda var_dict: base_func([var_dict[var_name] for var_name in var_names]).A[0]
+
+  if fixed_basepoint is None:
+    base_inv_func = lambdify((inverse_coordinate_labels, var_names), inverse_transform_matrix.T, "numpy")
+    inv_func = lambda coords, var_dict: base_inv_func(coords, [var_dict[var_name] for var_name in var_names]).A[0]
+  else:
+    base_inv_func = lambdify([var_names], inverse_transform_matrix.T, "numpy")
+    inv_func = lambda var_dict: base_inv_func([var_dict[var_name] for var_name in var_names]).A[0]
+
+  return func, inv_func, var_names
 
 
 # Z-axis is the last axis of rotation
 # X-axis is the common normal between the last two axes of rotation(z-axes)
 # Y-axis is constrained by the previous two via right hand rule
 def test():
-  seg1 = Segment('coxa', pi/2, 0.5, 0)
-  seg2 = Segment('femur', 0, 1.5, 0)
-  seg3 = Segment('tibia', 0, 2, 0)
+  seg1 = Segment('coxa', alpha=pi/2, r=0.5, d=5.6)
+  seg2 = Segment('femur', alpha=0, r=1.5, d=2.4)
+  seg3 = Segment('tibia', alpha=0, r=2, d=1.3)
   segments = [seg1, seg2, seg3]
 
-  f, inv_f = get_transformation_function(segments)
+  f, inv_f, vars = get_transformation_function(segments)
+  print vars  # These are the missing parameters from the above definitions
+              # And here is a dictionary containing values for them
+  var_vals = {'theta_coxa':-pi/1.5, 'theta_femur':pi/3, 'theta_tibia':pi/4}
+
+  # Now you can actually do a transformation super easily like so:
+  nx,ny,nz = f((1.,2.,3.),var_vals)
 
   import random
-  import numpy
   import time
   domain = 10
   count = 500
@@ -140,9 +174,9 @@ def test():
     x = random.random()*domain - domain/2.
     y = random.random()*domain - domain/2.
     z = random.random()*domain - domain/2.
-    nx,ny,nz = f((x,y,z), (-pi/1.5,pi/3,pi/4)).A[0]
-    x1, y1, z1 = inv_f((nx,ny,nz), (-pi/1.5,pi/3,pi/4)).A[0]
-    max_wrong = max(max_wrong, abs(x1 - x), abs(y1 - y), abs(z1 -z))
+    nx,ny,nz = f((x,y,z),var_vals)
+    x1, y1, z1 = inv_f((nx,ny,nz), var_vals)
+    max_wrong = max(max_wrong, abs(x1 - x), abs(y1 - y), abs(z1 - z))
   print "Time for %d iterations: < %s seconds"%(count*2,str(time.time() - start))
   print "Largest error: " + str(max_wrong)
 
