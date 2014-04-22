@@ -1,9 +1,10 @@
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from datetime import datetime
+
 from parts_library import chassis_library
 from dynamic_model import *
-from datetime import datetime
 
 
 class SuperModel:
