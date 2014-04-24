@@ -120,9 +120,7 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
   
   # Multiply by the coordinate in the space we are transforming from
   transform_matrix = dh_mat*coordinate_vector
-  transform_matrix.row_del(3) #Chop off extra row in result matrix
   inverse_transform_matrix = inv_dh_mat*inverse_coordinate_vector
-  inverse_transform_matrix.row_del(3)
 
   # Numerically eval everything finally
   transform_matrix = transform_matrix.evalf(chop=True)
@@ -133,27 +131,27 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
   inverse_transform_matrix = inverse_transform_matrix.applyfunc(coeff_chop)
   # Bake into a lambda func
 
-  base_func = lambdify(flatten((coordinate_labels, var_names)), transform_matrix.T, "numpy")
-  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inverse_transform_matrix.T, "numpy")
+  base_func = lambdify(flatten((coordinate_labels, var_names)), transform_matrix, "numpy")
+  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inverse_transform_matrix, "numpy")
 
   if use_dict:
     if fixed_endpoint:
-      func = lambda var_dict: base_func(*flatten([var_dict[var_name] for var_name in var_names])).A[0]
+      func = lambda var_dict: base_func(*flatten([var_dict[var_name] for var_name in var_names])).A
     else:
-      func = lambda coords, var_dict: base_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A[0]
+      func = lambda coords, var_dict: base_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A
     if fixed_basepoint:
-      inv_func = lambda var_dict: base_inv_func(*flatten([var_dict[var_name] for var_name in var_names])).A[0]
+      inv_func = lambda var_dict: base_inv_func(*flatten([var_dict[var_name] for var_name in var_names])).A
     else:
-      inv_func = lambda coords, var_dict: base_inv_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A[0]
+      inv_func = lambda coords, var_dict: base_inv_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A
   else:
     if fixed_endpoint:
-      func = lambda var_vals: base_func(*flatten(var_vals)).A[0]
+      func = lambda var_vals: base_func(*flatten(var_vals)).A
     else:
-      func = lambda coords, var_vals: base_func(*flatten((coords, var_vals))).A[0]
+      func = lambda coords, var_vals: base_func(*flatten((coords, var_vals))).A
     if fixed_basepoint:
-      inv_func = lambda var_vals: base_inv_func(*flatten(var_vals)).A[0]
+      inv_func = lambda var_vals: base_inv_func(*flatten(var_vals)).A
     else:
-      inv_func = lambda coords, var_vals: base_inv_func(*flatten((coords, var_vals))).A[0]
+      inv_func = lambda coords, var_vals: base_inv_func(*flatten((coords, var_vals))).A
 
   return func, inv_func
 
@@ -163,17 +161,15 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
 # Y-axis is constrained by the previous two via right hand rule
 def test():
   import kinematic_chain as kc
-  seg1 = kc.Segment('coxa', alpha=pi/2, r=0.5, d=5.6)
-  seg2 = kc.Segment('femur', alpha=0, r=1.5, d=2.4)
-  seg3 = kc.Segment('tibia', alpha=0, r=2, d=1.3)
+  seg1 = kc.Segment('coxa', alpha=pi/2, r=0.5, d=0)
+  seg2 = kc.Segment('femur', alpha=0, r=1.5, d=0)
+  seg3 = kc.Segment('tibia', alpha=0, r=2, d=0)
   segments = [seg1, seg2, seg3]
 
   f, inv_f = get_transformation_function(segments)
               # And here is a dictionary containing values for them
   var_vals = {'theta_coxa':-pi/1.5, 'theta_femur':pi/3, 'theta_tibia':pi/4}
 
-  # Now you can actually do a transformation super easily like so:
-  nx,ny,nz = f((1.,2.,3.),var_vals)
 
   import random
   import time
@@ -185,8 +181,8 @@ def test():
     x = random.random()*domain - domain/2.
     y = random.random()*domain - domain/2.
     z = random.random()*domain - domain/2.
-    nx,ny,nz = f((x,y,z),var_vals)
-    x1, y1, z1 = inv_f((nx,ny,nz), var_vals)
+    nx,ny,nz,_ = f((x,y,z),var_vals)
+    x1, y1, z1,_ = inv_f((nx,ny,nz), var_vals)
     max_wrong = max(max_wrong, abs(x1 - x), abs(y1 - y), abs(z1 - z))
   print "Time for %d iterations: < %s seconds"%(count*2,str(time.time() - start))
   print "Largest error: " + str(max_wrong)
