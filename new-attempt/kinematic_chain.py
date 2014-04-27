@@ -16,11 +16,11 @@ class RevoluteJoint(KinematicPair):
 
 class PrismaticJoint(KinematicPair):
   def __init__(self, label, alpha, r, theta):
-    super(PrismaticJoint, self).__init__(label, alpha=alpha, r=r, theta=theta)
+    super(PrismaticJoint, self).__init__(label, alpha=alpha, d=d, theta=theta)
 
 class CylindricalJoint(KinematicPair):
   def __init__(self, label, alpha, r):
-    super(CylindricalJoint, self).__init__(label, alpha=alpha, r=r)
+    super(CylindricalJoint, self).__init__(label, alpha=alpha, d=d)
 
 class KinematicChain(object):
   def __init__(self, kinematic_pairs):
