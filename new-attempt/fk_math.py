@@ -161,9 +161,9 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
 # Y-axis is constrained by the previous two via right hand rule
 def test():
   import kinematic_chain as kc
-  seg1 = kc.Segment('coxa', alpha=pi/2, r=0.5, d=0)
-  seg2 = kc.Segment('femur', alpha=0, r=1.5, d=0)
-  seg3 = kc.Segment('tibia', alpha=0, r=2, d=0)
+  seg1 = kc.RevoluteJoint('coxa', alpha=pi/2, r=0.5, d=0)
+  seg2 = kc.RevoluteJoint('femur', alpha=0, r=1.5, d=0)
+  seg3 = kc.RevoluteJoint('tibia', alpha=0, r=2, d=0)
   segments = [seg1, seg2, seg3]
 
   f, inv_f = get_transformation_function(segments)
