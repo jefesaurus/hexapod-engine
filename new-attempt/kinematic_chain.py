@@ -11,19 +11,27 @@ class KinematicPair(object):
     self.theta = theta
 
 class RevoluteJoint(KinematicPair):
-  def __init__(self, label, alpha, r, d):
+  def __init__(self, label, alpha, r, d, min_theta=-pi, max_theta=pi):
     super(RevoluteJoint, self).__init__(label, alpha=alpha, r=r, d=d)
+    self.min_theta = min_theta
+    self.max_theta = max_theta
 
 class PrismaticJoint(KinematicPair):
-  def __init__(self, label, alpha, d, theta):
+  def __init__(self, label, alpha, d, theta, min_r=0, max_r=None):
     super(PrismaticJoint, self).__init__(label, alpha=alpha, d=d, theta=theta)
+    self.min_r = min_r
+    self.max_r = max_r
 
 class CylindricalJoint(KinematicPair):
-  def __init__(self, label, alpha, d):
+  def __init__(self, label, alpha, d, min_r=0, max_r=None, min_theta=-pi, max_theta=pi):
     super(CylindricalJoint, self).__init__(label, alpha=alpha, d=d)
+    self.min_r = min_r
+    self.max_r = max_r
+    self.min_theta = min_theta
+    self.max_theta = max_theta
 
 class KinematicChain(object):
-  def __init__(self, kinematic_pairs):
+  def __init__(self, kinematic_pairs, ik_func=None):
     self.num_links = len(kinematic_pairs)
     self.kinematic_pairs = kinematic_pairs
     self.transform_funcs = []
@@ -42,6 +50,7 @@ class KinematicChain(object):
     for i, func in enumerate(self.transform_funcs):
       points.append(func(var_vals[:i+1])[:3].T[0].tolist())
     return [(points[x-1], points[x]) for x in xrange(1,len(points))]
+
 
 def test():
   coxa = RevoluteJoint('coxa', pi/2, 0.5, 0)

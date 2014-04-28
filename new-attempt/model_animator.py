@@ -1,17 +1,21 @@
 import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import time
 
 class Canvas:
   def __init__(self):
     self._init_graphics()
-    self.interval = 4
+    self.interval = 1
     self.segment_funcs = []
+    self.update_funcs = []
+    self.last_time = time.time()
 
   def register_drawable(self, drawable):
     segment_func = drawable.get_segments
     segments = [self.ax.plot([dat[0][0], dat[1][0]], [dat[0][1], dat[1][1]], [dat[0][2], dat[1][2]])[0] for dat in segment_func()]
     self.segment_funcs.append((segment_func, segments))
+    self.update_funcs.append(drawable.update_state)
 
   def _init_graphics(self):
     self.fig = plt.figure()
@@ -21,8 +25,15 @@ class Canvas:
     self.ax.set_zlim3d([-5.0, 0.0])
 
   def update(self, num):
-    #self.update_model_state(num)
+    current_time = time.time()
+    elapsed_time = current_time - self.last_time
+    self.update_state(elapsed_time)
+    self.last_time = current_time
     self.update_lines()
+
+  def update_state(self, elapsed_time):
+    for update_func in self.update_funcs:
+      update_func(elapsed_time)
 
   def update_lines(self):
     for segment_func, old_segments in self.segment_funcs:

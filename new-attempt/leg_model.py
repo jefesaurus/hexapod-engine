@@ -1,90 +1,92 @@
 import kinematic_chain as kc
-from math import pi, atan, acos, sqrt, atan2
-import numpy as np
+from ik_3dof import IK_3DoF
+
+import math
 
 # A revolute joint with state about the angle, range, speed etc.
-class LegSegment(object):
+class JointState(object):
+  def __init__(self, kinematic_pair):
+    self.kp = kinematic_pair
+    if kinematic_pair.alpha is None:
+      self.current_alpha = 0
+    if kinematic_pair.r is None:
+      self.current_r = 0
+    if kinematic_pair.d is None:
+      self.current_d = 0
+    if kinematic_pair.theta is None:
+      self.current_theta = 0
+
+
+class RevoluteState(JointState):
   def __init__(self, revolute_joint):
-    #self.servo = servo
-    self.current_angle = 0
-    self.revolute_joint = revolute_joint
+    super(RevoluteState, self).__init__(revolute_joint)
+    self.destination = None
+    self.angular_velocity = 1.
 
-  def set_angle(self, angle):
-    self.current_angle = angle
+  def set_theta(self, new_theta):
+    if new_theta > self.kp.max_theta:
+      self.current_theta = self.kp.max_theta
+    elif new_theta < self.kp.min_theta:
+      self.current_theta = self.kp.min_theta
+    else:
+      self.current_theta = new_theta
 
-  def update(self, commanded_angle, time_elapsed):
-    pass
+  def update_state(self, time_elapsed):
+    if self.destination is not None:
+      #print 'current: %f, desired: %f \r'%(self.current_theta, self.destination)
+      diff = self.destination - self.current_theta
+      delta = math.copysign(self.angular_velocity*time_elapsed, diff)
+      if abs(delta) < abs(diff):
+        self.set_theta(self.current_theta + delta)
+      else:
+        self.set_theta(self.destination)
 
+  def set_command(self, destination, angular_velocity):
+    #print 'Setting destination: ' + str(destination) + '\r'
+    self.destination = destination
+    self.angular_velocity = angular_velocity
+
+MAX_ANGULAR_VELOCITY = 1.
 class Leg(object):
-  def __init__(self, leg_segments, ik_func):
-    self.frame = kc.KinematicChain([seg.revolute_joint for seg in leg_segments])
-    self.leg_segments = leg_segments
+  def __init__(self, revolute_joints, ik_func):
+    self.frame = kc.KinematicChain(revolute_joints)
+    self.joint_states = [RevoluteState(joint) for joint in revolute_joints]
     self.ik_func = ik_func
+    self.destination = None
     
   def get_ik_solution(self, x, y, z):
-    return self.ik_func(self, x, y, z)
+    return self.ik_func(self, self.frame, x, y, z)
 
   def set_angles(self, angles):
-    for seg, angle in zip(self.leg_segments, angles):
-      seg.current_angle = angle
+    for state, angle in zip(self.joint_states, angles):
+      state.set_theta(angle)
 
-  # Commanded Point must be in the legs frame.
-  def update(self, commanded_point, time_elapsed):
-    # Get req'd angles out of IK
-    # update
-    pass
+  def update_state(self, time_elapsed):
+    for joint in self.joint_states:
+      joint.update_state(time_elapsed)
+
+  def set_command(self, x, y, z): # Commanded point must be in leg's frame
+    print 'Moving to: ' + str((x, y, z)) + '\r'
+    print 'Currently at: ' + str(self.get_end_effector()[:3].T[0]) + '\r'
+    self.destination = (x, y, z)
+    ik_solutions = self.ik_func(self.frame, x, y, z)
+    if len(ik_solutions) > 0:
+      for joint, angle in zip(self.joint_states, ik_solutions[0]):
+        joint.set_command(angle, MAX_ANGULAR_VELOCITY)
 
   def get_segments(self):
-    angles = [segment.current_angle for segment in self.leg_segments]
+    angles = [joint.current_theta for joint in self.joint_states]
     return self.frame.get_all_segments(angles)
 
   def get_end_effector(self):
-    angles = [segment.current_angle for segment in self.leg_segments]
+    angles = [segment.current_theta for segment in self.joint_states]
     return self.frame.to_global(angles)
 
 
-# Inverse Kinematics for a very specific 3DoF leg structure
-def IK_3DoF(kinematic_chain, x, y, z):
-  coxa, femur, tibia = kinematic_chain.kinematic_pairs
-  x, y, z = float(x), float(y), float(z)
-
-  # The combined offset along the axes of rotation for the femur and tibia
-  d = femur.d + tibia.d
-  # There is only one possible coxa angle for any point
-  det = x**2 + y**2 - d**2
-  if det < 0:
-    return (0, 0, 0)
-  elif d == y: # Some weird degenerate case. Couldn't quite figure out why, but this gets around it
-    coxa_angle = 2*atan(y/x)
-  else:
-    coxa_angle = 2*atan((x - sqrt(x**2 + y**2 - d**2))/(d - y))
-
-  # Now move into the coxa's frame using the calculated angle
-  nx, ny, nz, _ = kinematic_chain.inv_transform_funcs[0]((x,y,z), coxa_angle).T[0]
-
-  # Now we only care about X and Y. Z should equal d
-  target = nx**2+ny**2
-  femur.r = femur.r
-  tibia.r = tibia.r
-  range = (femur.r + tibia.r)**2  
-  target_dir = atan2(ny, nx)
-  if target > range:      # Too far
-    solutions = (coxa_angle, target_dir, 0) 
-  elif target < (femur.r - tibia.r)**2: # Too close
-    solutions = (coxa_angle, 0, 0)
-  else:
-    # law of cosines
-    theta_a = acos((femur.r**2 + tibia.r**2 - target)/(2*femur.r * tibia.r))  # The 'inner tibia angle'
-    theta_b = acos((femur.r**2 + target - tibia.r**2)/(2*femur.r * sqrt(target)))
-
-    # TODO use servo range limits to select between the two solutions
-    solutions = [(coxa_angle, target_dir + theta_b, theta_a - pi), (coxa_angle, target_dir - theta_b, pi - theta_a)]
-  return solutions
-
 def get_test_leg():
-  coxa = LegSegment(kc.RevoluteJoint('coxa', pi/2, 0.5, 0))
-  femur = LegSegment(kc.RevoluteJoint('femur', 0, 1.5, .1))
-  tibia = LegSegment(kc.RevoluteJoint('tibia', 0, 2, .1))
+  coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
+  femur = kc.RevoluteJoint('femur', 0, 1.5, .1, min_theta=-math.pi/2, max_theta=math.pi/2)
+  tibia = kc.RevoluteJoint('tibia', 0, 2.5, .1, min_theta=-math.pi, max_theta=0)
   return Leg([coxa, femur, tibia], IK_3DoF)
 
 def test():
