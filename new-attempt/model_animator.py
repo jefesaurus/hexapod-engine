@@ -46,7 +46,7 @@ class Canvas:
     self.line_ani = animation.FuncAnimation(self.fig, self.update, 2000, interval=self.interval, blit=False)
     plt.show()
 
-def test():
+def leg_test():
   import leg_model as lm
   from math import pi
 
@@ -56,5 +56,13 @@ def test():
   canvas.register_drawable(leg)
   canvas.show()
 
+def chassis_test():
+  import chassis as sk
+  chassis = sk.get_test_chassis()
+  canvas = Canvas()
+  canvas.register_drawable(chassis)
+  canvas.show()
+
+
 if __name__ == '__main__':
-  test()
+  chassis_test()

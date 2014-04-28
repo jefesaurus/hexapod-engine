@@ -67,11 +67,28 @@ def single_leg_controller():
   canvas.register_drawable(leg)
   canvas.register_drawable(pm)
 
-
   # Start controller
   thread.start_new_thread(keyboard, (input_queue,))
   thread.start_new_thread(point_control, (input_queue, leg, pm))
   canvas.show()
 
+def chassis_controller():
+  import chassis as sk
+  from model_animator import Canvas
+
+  # Set up leg
+  chassis = sk.get_test_chassis() 
+  pm = PointMarker()
+  input_queue = Queue()
+  output_queue = Queue()
+  canvas = Canvas()
+  canvas.register_drawable(chassis)
+  canvas.register_drawable(pm)
+
+  # Start controller
+  thread.start_new_thread(keyboard, (input_queue,))
+  thread.start_new_thread(point_control, (input_queue, chassis, pm))
+  canvas.show()
+
 if __name__ == '__main__':
-  single_leg_controller()
+  chassis_controller()

@@ -46,9 +46,9 @@ class KinematicChain(object):
 
   # Returns points for each segment in the chain
   def get_all_segments(self, var_vals):
-    points = [[0,0,0]]
+    points = [[0,0,0,1.]]
     for i, func in enumerate(self.transform_funcs):
-      points.append(func(var_vals[:i+1])[:3].T[0].tolist())
+      points.append(func(var_vals[:i+1])[:4].T[0].tolist())
     return [(points[x-1], points[x]) for x in xrange(1,len(points))]
 
 

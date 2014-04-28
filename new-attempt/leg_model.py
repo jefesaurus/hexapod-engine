@@ -33,7 +33,6 @@ class RevoluteState(JointState):
 
   def update_state(self, time_elapsed):
     if self.destination is not None:
-      #print 'current: %f, desired: %f \r'%(self.current_theta, self.destination)
       diff = self.destination - self.current_theta
       delta = math.copysign(self.angular_velocity*time_elapsed, diff)
       if abs(delta) < abs(diff):
@@ -42,9 +41,9 @@ class RevoluteState(JointState):
         self.set_theta(self.destination)
 
   def set_command(self, destination, angular_velocity):
-    #print 'Setting destination: ' + str(destination) + '\r'
     self.destination = destination
     self.angular_velocity = angular_velocity
+
 
 MAX_ANGULAR_VELOCITY = 1.
 class Leg(object):
@@ -66,13 +65,16 @@ class Leg(object):
       joint.update_state(time_elapsed)
 
   def set_command(self, x, y, z): # Commanded point must be in leg's frame
-    print 'Moving to: ' + str((x, y, z)) + '\r'
-    print 'Currently at: ' + str(self.get_end_effector()[:3].T[0]) + '\r'
     self.destination = (x, y, z)
     ik_solutions = self.ik_func(self.frame, x, y, z)
     if len(ik_solutions) > 0:
-      for joint, angle in zip(self.joint_states, ik_solutions[0]):
-        joint.set_command(angle, MAX_ANGULAR_VELOCITY)
+      pairs = zip(self.joint_states, ik_solutions[0])
+      # Figure out which one will take the longest, and scale all of speeds
+      # so they finish at the same time.
+      completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
+      max_time = max(max(completion_times), .00000001)
+      for (joint, angle), time in zip(pairs, completion_times):
+        joint.set_command(angle, MAX_ANGULAR_VELOCITY*time/max_time)
 
   def get_segments(self):
     angles = [joint.current_theta for joint in self.joint_states]
@@ -85,8 +87,8 @@ class Leg(object):
 
 def get_test_leg():
   coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
-  femur = kc.RevoluteJoint('femur', 0, 1.5, .1, min_theta=-math.pi/2, max_theta=math.pi/2)
-  tibia = kc.RevoluteJoint('tibia', 0, 2.5, .1, min_theta=-math.pi, max_theta=0)
+  femur = kc.RevoluteJoint('femur', 0, 1.5, 0, min_theta=-math.pi/2, max_theta=math.pi/2)
+  tibia = kc.RevoluteJoint('tibia', 0, 2.5, 0, min_theta=-math.pi, max_theta=0)
   return Leg([coxa, femur, tibia], IK_3DoF)
 
 def test():
