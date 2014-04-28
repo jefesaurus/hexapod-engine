@@ -7,14 +7,9 @@ Current status:
 As before, IK and FK are doing well.
 I almost had a gait sequencer working the way I wanted it to, but then I decided to refactor everything and change the model/pose system. So now I don't have any kind of gait sequencer, but the underlying code is probably a little bit nicer and more extensible.
 
-I want to implement a gait sequencer that actually plans out dynamically where and when to place each foot instead of merely following a sequence and changing the vectors involved(Though that works very well apparently). The main problem I face when I think about how it should work is whether to plan ahead or not. The optimal foot position for a body that will continue moving forward is different from one which will turn or reverse motion after the next step. As such, if I want to calculate 'optimal' positions I need to lock in the motion for the next few steps or so, which can potentially be bad news for someone trying to control the robot in real time or if the robot itself is planning motion based on changing information.
+I want to implement a gait sequencer that actually plans out dynamically where and when to place each foot instead of merely following a sequence and changing the vectors involved(Though that works very well apparently). The main problem I face when I think about how it should work is whether to plan ahead or not. The optimal foot position for a body that will continue moving forward is entirely different from one which will turn or reverse motion after the next step. As such, if I want to calculate 'optimal' positions I need to lock in the motion for the next few steps or so, which can potentially be bad news for someone trying to control the robot in real time or if the robot itself is planning motion based on changing information.
 
-So I'll have to figure that out at some point, but for now the 'working code' is in the 'staging' directory, and it uses some old stuff from other top level directories as well as refactored stuff within the staging directory, so its pretty big mess that I should try to sort out soon.
-
-I've been trying to abstract the platform such that whether the code is driving a graphical representation vs a physical model is completely transparent.
-
-The main loop is in model_animator.py
-It makes a 'dynamic_model' based on a chassis definition, and then gets a command in the form of a pose for that model (servo angles). 
+So I'll have to figure that out at some point, but for now the working code is in the 'staging' directory, and it uses some old stuff from other top level directories as well as refactored stuff within the staging directory, so its pretty big mess that I should try to sort out soon.
 
 
 Plan
