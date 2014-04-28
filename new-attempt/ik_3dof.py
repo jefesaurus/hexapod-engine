@@ -9,7 +9,7 @@ def IK_3DoF(kinematic_chain, x, y, z):
   d = femur.d + tibia.d
   # There is only one possible coxa angle for any point
   det = x**2 + y**2 - d**2
-  if det < 0:
+  if det <= 0:
     return [(0, 0, 0)]
   elif d == y: # Some weird degenerate case. Couldn't quite figure out why, but this gets around it
     coxa_angle = 2*atan(y/x)

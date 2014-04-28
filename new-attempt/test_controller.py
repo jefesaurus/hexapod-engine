@@ -3,7 +3,7 @@ from math import pi,cos,sin
 from multiprocessing import Process, Queue
 from utils.getch import _Getch
 
-def point_control(input_queue, controllable, marker):
+def point_control(input_queue, controllable):
   delta = .25
   x, y, z = 3.0, 0, 0
   while True:
@@ -17,7 +17,6 @@ def point_control(input_queue, controllable, marker):
     elif control_signal == 'l': z -= delta
 
     controllable.set_command(x, y, z)
-    marker.set_command(x, y, z)
 
 def keyboard(control_queue):
   getch = _Getch()
@@ -30,29 +29,6 @@ def keyboard(control_queue):
         control_queue.put(k)
         return
       elif k in 'wasdol': control_queue.put(k)
-
-class PointMarker(object):
-  def __init__(self):
-    self.x = 0
-    self.y = 0
-    self.z = 0
-    self.mark_size = .1
-
-  def set_command(self, x, y, z): # Commanded point must be in leg's frame
-    self.x = x
-    self.y = y
-    self.z = z
-
-  def update_state(self, time_elapsed):
-    pass
-
-  def get_segments(self):
-    x = self.x
-    y = self.y
-    z = self.z
-    return [((x-self.mark_size, y, z), (x+self.mark_size,y,z)),
-          ((x, y-self.mark_size, z), (x,y+self.mark_size,z)),
-          ((x, y, z-self.mark_size), (x,y,z+self.mark_size))]
 
 def single_leg_controller():
   import leg_model as lm
@@ -78,16 +54,14 @@ def chassis_controller():
 
   # Set up leg
   chassis = sk.get_test_chassis() 
-  pm = PointMarker()
   input_queue = Queue()
   output_queue = Queue()
   canvas = Canvas()
   canvas.register_drawable(chassis)
-  canvas.register_drawable(pm)
 
   # Start controller
   thread.start_new_thread(keyboard, (input_queue,))
-  thread.start_new_thread(point_control, (input_queue, chassis, pm))
+  thread.start_new_thread(point_control, (input_queue, chassis))
   canvas.show()
 
 if __name__ == '__main__':

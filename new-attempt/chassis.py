@@ -1,18 +1,23 @@
 import math
 import leg_model as lm
 import pose
+from utils.point_marker import PointMarker
 
+
+SHOW_COMMANDED_POINT = True
 class Chassis:
   def __init__(self, legs, leg_poses):
     self.legs = legs
     self.leg_poses = leg_poses
     self.num_legs = len(self.legs)
     self.current_pose = pose.Pose(0,0,0,0,0,0)
-    if len(leg_poses) > 1:
+    if self.num_legs > 1:
       leg_points = [(lpose.x, lpose.y, lpose.z, 1.) for lpose in leg_poses]
-      self.base_segments = [(leg_points[x-1], leg_points[x]) for x in xrange(len(leg_points))]
+      self.base_segments = [(leg_points[x-1], leg_points[x]) for x in xrange(self.num_legs)]
     else:
       self.base_segments = []
+    if SHOW_COMMANDED_POINT:
+      self.markers = [PointMarker() for i in range(self.num_legs)]
 
   def local_to_global(self, point):
     return self.current_pose.from_frame_mat.dot(point).tolist()
@@ -24,6 +29,9 @@ class Chassis:
     segments = [(self.local_to_global(p1), self.local_to_global(p2)) for (p1, p2) in self.base_segments]
     for i, leg in enumerate(self.legs):
       segments.extend([(self.leg_to_global(i, p1), self.leg_to_global(i, p2)) for (p1, p2) in leg.get_segments()])
+    if SHOW_COMMANDED_POINT:
+      for i, marker in enumerate(self.markers):
+        segments.extend([(self.leg_to_global(i, p1), self.leg_to_global(i, p2)) for (p1, p2) in marker.get_segments()])
     return segments
 
   def update_state(self, time_elapsed):
@@ -33,6 +41,9 @@ class Chassis:
   def set_command(self, x, y, z):
     for leg in self.legs:
       leg.set_command(x, y, z)
+    if SHOW_COMMANDED_POINT:
+      for marker in self.markers:
+        marker.set_command(x,y,z)
 
 
 def get_test_chassis():
