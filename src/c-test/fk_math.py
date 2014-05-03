@@ -1,0 +1,241 @@
+#!/usr/bin/python
+import sympy as sp
+import numpy
+from sympy.utilities import lambdify
+from sympy.utilities.lambdify import lambdastr
+from sympy.utilities.iterables import flatten
+from math import pi, cos, sin
+
+# takes a list of Denavit Hartenberg parametrized link segments
+# and generates the transformation matrix for each of them
+# and generates the complete transformation matrix for the entire
+# manipulator
+def DHMaker(segments):
+  dh_matrices = {}
+  inverse_dh_matrices = {}
+  required_parameters = []
+  for segment in segments:
+    if segment.theta is not None:
+      theta = segment.theta
+    else:
+      theta = sp.Symbol(str('theta_' + segment.label))
+      required_parameters.append(theta)
+    if segment.alpha is not None:
+      alpha = segment.alpha
+    else:
+      alpha = sp.Symbol(str('alpha_' + segment.label))
+      required_parameters.append(alpha)
+    if segment.r is not None:
+      r = segment.r
+    else:
+      r = sp.Symbol(str('r_' + segment.label))
+      required_parameters.append(r)
+    if segment.d is not None:
+      d = segment.d
+    else:
+      d = sp.Symbol(str('d_' + segment.label))
+      required_parameters.append(d)
+
+    # Components of the dh matrix
+    rotation_matrix = sp.Matrix([[sp.cos(theta), -sp.sin(theta)*sp.cos(alpha), sp.sin(theta)*sp.sin(alpha)],
+             [sp.sin(theta), sp.cos(theta)*sp.cos(alpha), -sp.cos(theta)*sp.sin(alpha)],
+             [0, sp.sin(alpha), sp.cos(alpha)]])
+    inverse_rotation = rotation_matrix.T
+
+    translation_matrix = sp.Matrix([r*sp.cos(theta),r*sp.sin(theta),d])
+    inverse_translation = -inverse_rotation*translation_matrix
+
+    last_row = sp.Matrix([[0, 0, 0, 1]])
+
+    # Compose the forwards and inverse DH Matrices
+    dh_matrix = sp.Matrix.vstack(sp.Matrix.hstack(rotation_matrix, translation_matrix), last_row)
+    inverse_dh_matrix = sp.Matrix.vstack(sp.Matrix.hstack(inverse_rotation, inverse_translation), last_row)
+
+    inverse_dh_matrices[segment.label] = inverse_dh_matrix
+    dh_matrices[segment.label] = dh_matrix
+
+  # Finally, flatten all the matrices into end-to-end transformation matrices
+  compound_dh_matrix = sp.eye(4)
+  compound_inverse_dh_matrix = sp.eye(4)
+  for segment in segments:
+    compound_dh_matrix *= dh_matrices[segment.label]
+  for segment in reversed(segments):
+    compound_inverse_dh_matrix *= inverse_dh_matrices[segment.label]
+
+  # Chop off terms with small coefficients
+  compound_dh_matrix = compound_dh_matrix.applyfunc(coeff_chop)
+  compound_inverse_dh_matrix = compound_inverse_dh_matrix.applyfunc(coeff_chop)
+
+  actual_reqs = compound_dh_matrix.atoms(sp.Symbol).union(compound_inverse_dh_matrix.atoms(sp.Symbol))
+  required_parameters = [str(req) for req in required_parameters if req in actual_reqs]  # This preserves the order in segments
+  return compound_dh_matrix, compound_inverse_dh_matrix, required_parameters
+
+# This recursively traverses the input expression
+# Grabs the numerical coefficient of terms and replaces with 0
+# if they are smaller than the 'tol'
+# Probably not mathematically sound in some cases, so try
+# to simplify trig identities and stuff first
+def coeff_chop(expr, tol=1e-15):
+  if abs(expr.as_coeff_Mul(rational=False)[0]) < tol:
+    return 0.
+  elif len(expr.args) < 1:
+    return expr
+  args = []
+  for arg in expr.args:
+    args.append(coeff_chop(arg, tol))
+  return expr.func(*args)
+
+
+# Returns a ready to use lambda function that takes inputs of the form
+# transform((x,y,z), {theta_label1: val1, theta_label2: val2...}
+# and returns a vector for the transformed coordinates
+# LABELS NEED TO MATCH THOSE ON YOUR SEGMENTS. The naming scheme is: PARAMETERNAME_SEGMENTLABEL
+# If you need to remember what these are, it also returns a list of what it expects for evaluatation
+#
+# Optional parameters fixed_endpoint and fixed_basepoint
+# These are for the cases where you already know the point in the frame you are transforming from or to
+# Eg. in FK, the endpoint of the end effector is probably (0,0,0) in its own reference frame or something
+# So you can bake that into the equation a priori
+# Same thing if you only ever want a single origin transformed for the inverse
+#
+# Optionally, to save some variable manipulation turn off the use_dict flag to supply values directly
+# The order of the values is by segment first and within that it is: (theta, alpha, r, d)
+def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=None, use_dict=True):
+  coordinate_labels = []
+  inverse_coordinate_labels = []
+  if fixed_endpoint:
+    coordinate_vector = sp.Matrix([fixed_endpoint[0], fixed_endpoint[1], fixed_endpoint[2], 1])
+  else:
+    coordinate_labels = ['x','y','z'] # It is assumed that the inverse will not need any fixed coordinates
+    x_s, y_s, z_s = sp.symbols(' '.join(coordinate_labels))
+    coordinate_vector = sp.Matrix([x_s,y_s,z_s,1])
+
+  if fixed_basepoint:
+    inverse_coordinate_vector = sp.Matrix([fixed_basepoint[0], fixed_basepoint[1], fixed_basepoint[2], 1])
+  else:
+    inverse_coordinate_labels = ['inv_x','inv_y','inv_z'] # It is assumed that the inverse will not need any fixed coordinates
+    inv_x_s, inv_y_s, inv_z_s = sp.symbols(' '.join(inverse_coordinate_labels))
+    inverse_coordinate_vector = sp.Matrix([inv_x_s, inv_y_s, inv_z_s,1])
+
+  dh_mat, inv_dh_mat, var_names = DHMaker(segments)
+  
+  # Multiply by the coordinate in the space we are transforming from
+  transform_matrix = dh_mat*coordinate_vector
+  inverse_transform_matrix = inv_dh_mat*inverse_coordinate_vector
+
+  # Numerically eval everything finally
+  transform_matrix = transform_matrix.evalf(chop=True)
+  inverse_transform_matrix = inverse_transform_matrix.evalf(chop=True)
+
+  # One more pass of chopping small stuff
+  transform_matrix = transform_matrix.applyfunc(coeff_chop)
+  inverse_transform_matrix = inverse_transform_matrix.applyfunc(coeff_chop)
+  # Bake into a lambda func
+
+  base_func = lambdify(flatten((coordinate_labels, var_names)), transform_matrix)
+  #print lambdastr(flatten((coordinate_labels, var_names)), transform_matrix)
+  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inverse_transform_matrix)
+
+  if use_dict:
+    if fixed_endpoint:
+      func = lambda var_dict: base_func(*flatten([var_dict[var_name] for var_name in var_names])).A
+    else:
+      func = lambda coords, var_dict: base_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A
+    if fixed_basepoint:
+      inv_func = lambda var_dict: base_inv_func(*flatten([var_dict[var_name] for var_name in var_names])).A
+    else:
+      inv_func = lambda coords, var_dict: base_inv_func(*flatten((coords, [var_dict[var_name] for var_name in var_names]))).A
+  else:
+    if fixed_endpoint:
+      func = lambda var_vals: base_func(*flatten(var_vals)).A
+    else:
+      func = lambda coords, var_vals: base_func(*flatten((coords, var_vals))).A
+    if fixed_basepoint:
+      inv_func = lambda var_vals: base_inv_func(*flatten(var_vals)).A
+    else:
+      inv_func = lambda coords, var_vals: base_inv_func(*flatten((coords, var_vals))).A
+
+  return func, inv_func
+
+
+# Z-axis is the last axis of rotation
+# X-axis is the common normal between the last two axes of rotation(z-axes)
+# Y-axis is constrained by the previous two via right hand rule
+def test():
+  import kinematic_chain as kc
+  seg1 = kc.RevoluteJoint('coxa', alpha=pi/2, r=0.5, d=0)
+  seg2 = kc.RevoluteJoint('femur', alpha=0, r=1.5, d=0)
+  seg3 = kc.RevoluteJoint('tibia', alpha=0, r=2, d=0)
+  segments = [seg1, seg2, seg3]
+
+  f, inv_f = get_transformation_function(segments)
+              # And here is a dictionary containing values for them
+  var_vals = {'theta_coxa':-pi/1.5, 'theta_femur':pi/3, 'theta_tibia':pi/4}
+
+
+  import random
+  import time
+  domain = 10
+  count = 500
+  start = time.time()
+  max_wrong = 0.
+  for i in range(count):
+    x = random.random()*domain - domain/2.
+    y = random.random()*domain - domain/2.
+    z = random.random()*domain - domain/2.
+    nx,ny,nz,_ = f((x,y,z),var_vals)
+    x1, y1, z1,_ = inv_f((nx,ny,nz), var_vals)
+    max_wrong = max(max_wrong, abs(x1 - x), abs(y1 - y), abs(z1 - z))
+  print "Time for %d iterations: < %s seconds"%(count*2,str(time.time() - start))
+  print "Largest error: " + str(max_wrong)
+
+def fk_math_cache(x, y, z, theta_coxa, theta_femur, theta_tibia):
+  sin_coxa = sin(theta_coxa)
+  cos_coxa = cos(theta_coxa)
+  sin_femur = sin(theta_femur)
+  cos_femur = cos(theta_femur)
+  sin_tibia = sin(theta_tibia)
+  cos_tibia = cos(theta_tibia)
+  return (x*(-sin_femur*sin_tibia*cos_coxa + cos_coxa*cos_femur*cos_tibia) + y*(-sin_femur*cos_coxa*cos_tibia - sin_tibia*cos_coxa*cos_femur) + 1.0*z*sin_coxa - 2.0*sin_femur*sin_tibia*cos_coxa + 2.0*cos_coxa*cos_femur*cos_tibia + 1.5*cos_coxa*cos_femur + 0.5*cos_coxa,
+  x*(-sin_coxa*sin_femur*sin_tibia + sin_coxa*cos_femur*cos_tibia) + y*(-sin_coxa*sin_femur*cos_tibia - sin_coxa*sin_tibia*cos_femur) - 1.0*z*cos_coxa - 2.0*sin_coxa*sin_femur*sin_tibia + 2.0*sin_coxa*cos_femur*cos_tibia + 1.5*sin_coxa*cos_femur + 0.5*sin_coxa,
+  x*(1.0*sin_femur*cos_tibia + 1.0*sin_tibia*cos_femur) + y*(-1.0*sin_femur*sin_tibia + 1.0*cos_femur*cos_tibia) + 2.0*sin_femur*cos_tibia + 1.5*sin_femur + 2.0*sin_tibia*cos_femur)
+
+def test_c():
+  import kinematic_chain as kc
+  import random
+  import time
+  import pydemo
+  seg1 = kc.RevoluteJoint('coxa', alpha=pi/2, r=0.5, d=0)
+  seg2 = kc.RevoluteJoint('femur', alpha=0, r=1.5, d=0)
+  seg3 = kc.RevoluteJoint('tibia', alpha=0, r=2, d=0)
+  segments = [seg1, seg2, seg3]
+  f, inv_f = get_transformation_function(segments, use_dict=False)
+  ca = -pi/1.5
+  fa = pi/3
+  ta = pi/4
+
+  domain = 10
+  count = 10000
+
+  x = [random.random()*domain - domain/2. for _ in range(count)]
+  y = [random.random()*domain - domain/2. for _ in range(count)]
+  z = [random.random()*domain - domain/2. for _ in range(count)]
+
+  x = 1.0
+  y = 3.0
+  z = 4.0
+  nx, ny, nz = [0]*count, [0]*count, [0]*count
+  cnx, cny, cnz = [0]*count, [0]*count, [0]*count
+
+  start = time.time()
+  for i in range(count):
+    nx[i], ny[i], nz[i] = fk_math_cache(x,y,z,ca, fa, ta)
+  nptime = time.time() - start
+
+  start = time.time()
+  pydemo.trial()
+  ctime = time.time() - start
+
+  print "Numpy time: %f C Time: %f, time ratio: %f"%(nptime, ctime, nptime/ctime)
+if __name__ == '__main__':
+  test_c()
