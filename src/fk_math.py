@@ -2,6 +2,7 @@
 import sympy as sp
 import numpy
 from sympy.utilities import lambdify
+from sympy.utilities.lambdify import lambdastr
 from sympy.utilities.iterables import flatten
 from math import pi
 
@@ -132,6 +133,7 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
   # Bake into a lambda func
 
   base_func = lambdify(flatten((coordinate_labels, var_names)), transform_matrix, "numpy")
+  print lambdastr(flatten((coordinate_labels, var_names)), transform_matrix)
   base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inverse_transform_matrix, "numpy")
 
   if use_dict:

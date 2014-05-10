@@ -46,12 +46,14 @@ class RevoluteState(JointState):
 
 
 MAX_ANGULAR_VELOCITY = 1.
-class Leg(object):
+MAX_UPDATE_INTERVAL = 10
+class LegModel(object):
   def __init__(self, revolute_joints, ik_func):
     self.frame = kc.KinematicChain(revolute_joints)
     self.joint_states = [RevoluteState(joint) for joint in revolute_joints]
     self.ik_func = ik_func
     self.destination = None
+    self.end_time = None
     
   def get_ik_solution(self, x, y, z):
     return self.ik_func(self, self.frame, x, y, z)
@@ -85,11 +87,31 @@ class Leg(object):
     return self.frame.to_global(angles)
 
 
+class LegController(object):
+  def __init__(self, leg_model, ik_func):
+    self.leg_model = leg_model
+    self.ik_func = ik_func
+
+  def set_command(self, x, y, z): # Commanded point must be in leg's frame
+    self.destination = (x, y, z)
+    ik_solutions = self.ik_func(self.frame, x, y, z)
+    if len(ik_solutions) > 0:
+      pairs = zip(self.joint_states, ik_solutions[0])
+      # Figure out which one will take the longest, and scale all of speeds
+      # so they finish at the same time.
+      completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
+      max_time = max(max(completion_times), .00000001)
+      for (joint, angle), time in zip(pairs, completion_times):
+        joint.set_command(angle, MAX_ANGULAR_VELOCITY*time/max_time)
+
+
+
+
 def get_test_leg():
   coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
   femur = kc.RevoluteJoint('femur', 0, 1.5, 0, min_theta=-math.pi/2, max_theta=math.pi/2)
   tibia = kc.RevoluteJoint('tibia', 0, 2.5, 0, min_theta=-math.pi, max_theta=0)
-  return Leg([coxa, femur, tibia], IK_3DoF)
+  return LegModel([coxa, femur, tibia], IK_3DoF)
 
 def test():
   leg = get_test_leg()
