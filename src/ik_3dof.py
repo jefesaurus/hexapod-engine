@@ -21,8 +21,6 @@ def IK_3DoF(kinematic_chain, x, y, z):
 
   # Now we only care about X and Y. Z should equal d
   target = nx**2+ny**2
-  femur.r = femur.r
-  tibia.r = tibia.r
   range = (femur.r + tibia.r)**2  
   target_dir = atan2(ny, nx)
   if target > range:      # Too far

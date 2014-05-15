@@ -64,7 +64,7 @@ def test():
   for p in leg.get_all_segments(pose):
     print p
   print leg.to_global(pose)
-  leg.generate_transformation_code('basic_leg', '../gen/basic_leg_transforms')
+  leg.generate_transformation_code('leg', './gen/basic_leg_transforms')
 
 if __name__ == '__main__':
   test()

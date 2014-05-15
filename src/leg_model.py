@@ -120,5 +120,20 @@ def test():
   leg.set_angles(angles[0])
   print leg.get_end_effector()
 
+def ik_speed_test():
+  import random
+  import time
+  domain = 1.5
+  count = 6000
+
+  leg = get_test_leg()
+  start = time.time()
+  for i in range(count):
+    x = random.random()*domain + 2
+    y = random.random()*domain
+    z = random.random()*domain - 1.
+    IK_3DoF(leg.frame, x, y, z)
+  print "Time for %d iterations: < %s seconds"%(count,str(time.time() - start))
+
 if __name__ == '__main__':
-  test()
+  ik_speed_test()

@@ -142,8 +142,8 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
   trans_mat, inv_trans_mat, var_names = get_sympy_reduction(segments, fixed_endpoint, fixed_basepoint, coordinate_labels, inverse_coordinate_labels)
 
   # Bake into a lambda func
-  base_func = lambdify(flatten((coordinate_labels, var_names)), trans_mat, "numpy")
-  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inv_trans_mat, "numpy")
+  base_func = lambdify(flatten((coordinate_labels, var_names)), trans_mat)
+  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inv_trans_mat)
 
   if use_dict:
     if fixed_endpoint:
@@ -184,10 +184,10 @@ def generate_transformation_code(segments, label, dest_path, fixed_endpoint=None
 
   c_funcs = []
   for i in range(start_seg, len(segments)+1):
-    trans_mat, inv_trans_mat, var_names = get_sympy_reduction(segments, fixed_endpoint, fixed_basepoint, coordinate_labels, inverse_coordinate_labels)
+    trans_mat, inv_trans_mat, var_names = get_sympy_reduction(segments[:i], fixed_endpoint, fixed_basepoint, coordinate_labels, inverse_coordinate_labels)
     inter_label = label + '_' + segments[i-1].label
-    c_funcs.extend([('x_to_' + inter_label, trans_mat[0]), ('y_to_' + inter_label, trans_mat[1]), ('z_to_' + inter_label, trans_mat[2]),
-  ('x_from_' + inter_label, inv_trans_mat[0]), ('y_from_' + inter_label, inv_trans_mat[1]), ('z_from_' + inter_label, inv_trans_mat[2])])
+    c_funcs.extend([('x_from_' + inter_label, trans_mat[0]), ('y_from_' + inter_label, trans_mat[1]), ('z_from_' + inter_label, trans_mat[2]),
+  ('x_to_' + inter_label, inv_trans_mat[0]), ('y_to_' + inter_label, inv_trans_mat[1]), ('z_to_' + inter_label, inv_trans_mat[2])])
   codegen(c_funcs, 'C', dest_path, label+'_fk', to_files=True)
 
 
