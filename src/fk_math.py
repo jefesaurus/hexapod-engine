@@ -6,6 +6,8 @@ from sympy.utilities.lambdify import lambdastr
 from sympy.utilities.iterables import flatten
 from math import pi
 
+from sympy.utilities.codegen import codegen
+
 # takes a list of Denavit Hartenberg parametrized link segments
 # and generates the transformation matrix for each of them
 # and generates the complete transformation matrix for the entire
@@ -86,34 +88,22 @@ def coeff_chop(expr, tol=1e-15):
   return expr.func(*args)
 
 
-# Returns a ready to use lambda function that takes inputs of the form
-# transform((x,y,z), {theta_label1: val1, theta_label2: val2...}
-# and returns a vector for the transformed coordinates
-# LABELS NEED TO MATCH THOSE ON YOUR SEGMENTS. The naming scheme is: PARAMETERNAME_SEGMENTLABEL
-# If you need to remember what these are, it also returns a list of what it expects for evaluatation
-#
+
 # Optional parameters fixed_endpoint and fixed_basepoint
 # These are for the cases where you already know the point in the frame you are transforming from or to
 # Eg. in FK, the endpoint of the end effector is probably (0,0,0) in its own reference frame or something
 # So you can bake that into the equation a priori
 # Same thing if you only ever want a single origin transformed for the inverse
-#
-# Optionally, to save some variable manipulation turn off the use_dict flag to supply values directly
-# The order of the values is by segment first and within that it is: (theta, alpha, r, d)
-def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=None, use_dict=True):
-  coordinate_labels = []
-  inverse_coordinate_labels = []
+def get_sympy_reduction(segments, fixed_endpoint=None, fixed_basepoint=None, coordinate_labels=None, inverse_coordinate_labels=None):
   if fixed_endpoint:
     coordinate_vector = sp.Matrix([fixed_endpoint[0], fixed_endpoint[1], fixed_endpoint[2], 1])
   else:
-    coordinate_labels = ['x','y','z'] # It is assumed that the inverse will not need any fixed coordinates
     x_s, y_s, z_s = sp.symbols(' '.join(coordinate_labels))
     coordinate_vector = sp.Matrix([x_s,y_s,z_s,1])
 
   if fixed_basepoint:
     inverse_coordinate_vector = sp.Matrix([fixed_basepoint[0], fixed_basepoint[1], fixed_basepoint[2], 1])
   else:
-    inverse_coordinate_labels = ['inv_x','inv_y','inv_z'] # It is assumed that the inverse will not need any fixed coordinates
     inv_x_s, inv_y_s, inv_z_s = sp.symbols(' '.join(inverse_coordinate_labels))
     inverse_coordinate_vector = sp.Matrix([inv_x_s, inv_y_s, inv_z_s,1])
 
@@ -130,11 +120,30 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
   # One more pass of chopping small stuff
   transform_matrix = transform_matrix.applyfunc(coeff_chop)
   inverse_transform_matrix = inverse_transform_matrix.applyfunc(coeff_chop)
-  # Bake into a lambda func
+  return transform_matrix, inverse_transform_matrix, var_names
 
-  base_func = lambdify(flatten((coordinate_labels, var_names)), transform_matrix, "numpy")
-  print lambdastr(flatten((coordinate_labels, var_names)), transform_matrix)
-  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inverse_transform_matrix, "numpy")
+# Returns a ready to use lambda function that takes inputs of the form
+# transform((x,y,z), {theta_label1: val1, theta_label2: val2...}
+# and returns a vector for the transformed coordinates
+# LABELS NEED TO MATCH THOSE ON YOUR SEGMENTS. The naming scheme is: PARAMETERNAME_SEGMENTLABEL
+# If you need to remember what these are, it also returns a list of what it expects for evaluatation
+#
+# Optionally, to save some variable manipulation turn off the use_dict flag to supply values directly
+# The order of the values is by segment first and within that it is: (theta, alpha, r, d)
+def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=None, use_dict=True):
+  if fixed_endpoint:
+    coordinate_labels = []
+  else:
+    coordinate_labels = ['x','y','z']
+  if fixed_basepoint:
+    inverse_coordinate_labels = []
+  else:
+    inverse_coordinate_labels = ['base_x','base_y','base_z']
+  trans_mat, inv_trans_mat, var_names = get_sympy_reduction(segments, fixed_endpoint, fixed_basepoint, coordinate_labels, inverse_coordinate_labels)
+
+  # Bake into a lambda func
+  base_func = lambdify(flatten((coordinate_labels, var_names)), trans_mat, "numpy")
+  base_inv_func = lambdify(flatten((inverse_coordinate_labels, var_names)), inv_trans_mat, "numpy")
 
   if use_dict:
     if fixed_endpoint:
@@ -156,6 +165,31 @@ def get_transformation_function(segments, fixed_endpoint=None, fixed_basepoint=N
       inv_func = lambda coords, var_vals: base_inv_func(*flatten((coords, var_vals))).A
 
   return func, inv_func
+
+# generate a C source file at "dest_path" with
+# transforms for x,y,z coordinates to and from the end effector
+# If intermediate_poitns is true, it generates the transforms to each of the segments
+def generate_transformation_code(segments, label, dest_path, fixed_endpoint=None, fixed_basepoint=None, intermediate_points=False):
+  if fixed_endpoint:
+    coordinate_labels = []
+  else:
+    coordinate_labels = ['x','y','z']
+  if fixed_basepoint:
+    inverse_coordinate_labels = []
+  else:
+    inverse_coordinate_labels = ['base_x','base_y','base_z']
+  start_seg = 1
+  if not intermediate_points:
+    start_seg = len(segments)
+
+  c_funcs = []
+  for i in range(start_seg, len(segments)+1):
+    trans_mat, inv_trans_mat, var_names = get_sympy_reduction(segments, fixed_endpoint, fixed_basepoint, coordinate_labels, inverse_coordinate_labels)
+    inter_label = label + '_' + segments[i-1].label
+    c_funcs.extend([('x_to_' + inter_label, trans_mat[0]), ('y_to_' + inter_label, trans_mat[1]), ('z_to_' + inter_label, trans_mat[2]),
+  ('x_from_' + inter_label, inv_trans_mat[0]), ('y_from_' + inter_label, inv_trans_mat[1]), ('z_from_' + inter_label, inv_trans_mat[2])])
+  codegen(c_funcs, 'C', dest_path, label+'_fk', to_files=True)
+
 
 
 # Z-axis is the last axis of rotation

@@ -51,6 +51,9 @@ class KinematicChain(object):
       points.append(func(var_vals[:i+1])[:4].T[0].tolist())
     return [(points[x-1], points[x]) for x in xrange(1,len(points))]
 
+  def generate_transformation_code(self, label, dest_path):
+    fk_math.generate_transformation_code(self.kinematic_pairs, label, dest_path, fixed_endpoint=(0,0,0), intermediate_points=True)
+
 
 def test():
   coxa = RevoluteJoint('coxa', pi/2, 0.5, 0)
@@ -61,6 +64,7 @@ def test():
   for p in leg.get_all_segments(pose):
     print p
   print leg.to_global(pose)
+  leg.generate_transformation_code('basic_leg', '../gen/basic_leg_transforms')
 
 if __name__ == '__main__':
   test()
