@@ -11,7 +11,7 @@ class Chassis:
     self.legs = legs
     self.leg_poses = leg_poses
     self.num_legs = len(self.legs)
-    self.current_pose = pose.Pose(0,0,0,0,0,0)
+    self.origin = pose.Pose(0,0,0,0,0,0)
     if self.num_legs > 1:
       leg_points = [(lpose.x, lpose.y, lpose.z, 1.) for lpose in leg_poses]
       self.base_segments = [(leg_points[x-1], leg_points[x]) for x in xrange(self.num_legs)]
@@ -19,13 +19,13 @@ class Chassis:
       self.base_segments = []
 
   def local_to_global(self, point):
-    return self.current_pose.from_frame_mat.dot(point).tolist()
+    return self.origin.from_frame_mat.dot(point).tolist()
 
   def leg_to_global(self, leg_index, point):
-    return self.current_pose.from_frame_mat.dot(self.leg_poses[leg_index].from_frame_mat.dot(point)).tolist()
+    return self.origin.from_frame_mat.dot(self.leg_poses[leg_index].from_frame_mat.dot(point)).tolist()
 
   def global_to_leg(self, leg_index, point):
-    return self.leg_poses[leg_index].to_frame_mat.dot(self.current_pose.to_frame_mat.dot(point)).tolist()
+    return self.leg_poses[leg_index].to_frame_mat.dot(self.origin.to_frame_mat.dot(point)).tolist()
 
   def get_segments(self):
     segments = [(self.local_to_global(p1), self.local_to_global(p2)) for (p1, p2) in self.base_segments]

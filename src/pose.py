@@ -30,6 +30,13 @@ class Pose:
   def to_frame_c(self, x, y, z):
     return self.to_frame_mat.dot(np.array([x,y,z,1]))[:3]
 
+  def as_tuple(self):
+    return (self.x, self.y, self.z, self.yaw, self.pitch, self.roll)
+  
+  @classmethod
+  def from_tuple(cls, pt):
+    return cls(pt[0], pt[1], pt[2], pt[3], pt[4], pt[5])
+
 
 def test():
   import random

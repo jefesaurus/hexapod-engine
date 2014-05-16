@@ -4,7 +4,7 @@ from multiprocessing import Process, Queue
 from utils.getch import _Getch
 
 def point_keyboard(step_command_output):
-  delta = .75
+  delta = .5
   x, y, z = 0.0, 0, 0
   bezier = True
 
@@ -17,17 +17,20 @@ def point_keyboard(step_command_output):
       if k == 'q':
         step_command_output.send('KILL')
         return
-      elif k == 'w': y += delta
-      elif k == 'd': x += delta
-      elif k == 's': y -= delta
-      elif k == 'a': x -= delta
-      elif k == 'o': z += delta
-      elif k == 'l': z -= delta
-      elif k == 'i':
-        if bezier: bezier = False
-        else: bezier = True
+      elif k == 'w':
+        step_command_output.send(('POSE', 0, 0, 0, 0,0,-delta/4,.25))
+      elif k == 'd':
+        step_command_output.send(('POSE', 0, 0, 0, 0,delta/4,0,.25))
+      elif k == 's':
+        step_command_output.send(('POSE', 0, 0, 0, 0,0,delta/4,.25))
+      elif k == 'a':
+        step_command_output.send(('POSE', 0, 0, 0, 0,-delta/4,0,.25))
+      elif k == 'o':
+        step_command_output.send(('POSE', 0, 0, delta, 0,0,0,.25))
+      elif k == 'l':
+        step_command_output.send(('POSE', 0, 0, -delta, 0,0,0,.25))
       elif k == 'r':
-        step_command_output.send((x,y))
+        step_command_output.send(('STEP', x, y, .25))
       #step_command_output.send((x,y,z, 1.0, bezier))
 
 
