@@ -10,7 +10,7 @@ def point_keyboard(step_command_output):
 
   getch = _Getch()
   while True:
-    print 'Press WASDOL or q'
+    print 'Press WASD-OL-I or q'
     next_char = _Getch()
     while True:
       k = next_char()
@@ -36,7 +36,6 @@ def pipe_echo(input_pipe):
     else:
       print input
     
-
 def single_leg_controller():
   import leg_model as lm
   import leg_controller as lc
