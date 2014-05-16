@@ -5,7 +5,7 @@ from utils.getch import _Getch
 
 def point_keyboard(step_command_output):
   delta = .75
-  x, y, z = 3.0, 0, 0
+  x, y, z = 0.0, 0, 0
   bezier = True
 
   getch = _Getch()
@@ -26,7 +26,10 @@ def point_keyboard(step_command_output):
       elif k == 'i':
         if bezier: bezier = False
         else: bezier = True
-      step_command_output.send((x,y,z, 1.0, bezier))
+      elif k == 'r':
+        step_command_output.send((x,y))
+      #step_command_output.send((x,y,z, 1.0, bezier))
+
 
 def pipe_echo(input_pipe):
   while True:

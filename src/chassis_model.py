@@ -24,6 +24,9 @@ class Chassis:
   def leg_to_global(self, leg_index, point):
     return self.current_pose.from_frame_mat.dot(self.leg_poses[leg_index].from_frame_mat.dot(point)).tolist()
 
+  def global_to_leg(self, leg_index, point):
+    return self.leg_poses[leg_index].to_frame_mat.dot(self.current_pose.to_frame_mat.dot(point)).tolist()
+
   def get_segments(self):
     segments = [(self.local_to_global(p1), self.local_to_global(p2)) for (p1, p2) in self.base_segments]
     for i, leg in enumerate(self.legs):

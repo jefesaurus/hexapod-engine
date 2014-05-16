@@ -12,11 +12,33 @@ class ChassisController(object):
   def __init__(self, chassis_model):
     self.sim_chassis = chassis_model
     self.leg_controllers = [lc.LegController(leg, IK_3DoF) for leg in self.sim_chassis.legs]
+    self.step_state = True
       
-  def set_command(self, chassis_control):
+  def set_command(self, step):
     #(x, y, z, deadline, bezier) = chassis_control
-    for leg_controller in self.leg_controllers:
-      leg_controller.set_command(chassis_control)
+    #for leg_controller in self.leg_controllers:
+    #  leg_controller.set_command(chassis_control)
+    self.step(step[0], step[1])
+
+  def step(self, x, y):
+    home_point = (2.5,0,-1,1)
+    if self.step_state:
+      x *= -1
+      y *= -1
+      self.step_state = False
+    else:
+      self.step_state = True
+    for i in [0,2,4]:
+      gp = self.sim_chassis.leg_to_global(i, home_point)
+      gp = (gp[0] + x, gp[1] + y, gp[2], gp[3])
+      lp = self.sim_chassis.global_to_leg(i, gp)
+      self.leg_controllers[i].set_command((lp[0], lp[1], lp[2], 1.0, self.step_state))
+
+    for i in [1,3,5]:
+      gp = self.sim_chassis.leg_to_global(i, home_point)
+      gp = (gp[0] - x, gp[1] - y, gp[2], gp[3])
+      lp = self.sim_chassis.global_to_leg(i, gp)
+      self.leg_controllers[i].set_command((lp[0], lp[1], lp[2], 1.0, not self.step_state))
 
   def update_state(self, time_elapsed):
     self.sim_chassis.update_state(time_elapsed)
