@@ -4,7 +4,7 @@ from multiprocessing import Process, Queue
 from utils.getch import _Getch
 
 def point_control(input_queue, controllable):
-  delta = .25
+  delta = .75
   x, y, z = 3.0, 0, 0
   while True:
     control_signal = input_queue.get()
@@ -16,7 +16,7 @@ def point_control(input_queue, controllable):
     elif control_signal == 'o': z += delta
     elif control_signal == 'l': z -= delta
 
-    controllable.set_command(x, y, z)
+    controllable.set_command(x, y, z, 1.0)
 
 def keyboard(control_queue):
   getch = _Getch()
@@ -36,16 +36,14 @@ def single_leg_controller():
 
   # Set up leg
   leg = lm.get_test_leg() 
-  pm = PointMarker()
   input_queue = Queue()
   output_queue = Queue()
   canvas = Canvas()
   canvas.register_drawable(leg)
-  canvas.register_drawable(pm)
 
   # Start controller
   thread.start_new_thread(keyboard, (input_queue,))
-  thread.start_new_thread(point_control, (input_queue, leg, pm))
+  thread.start_new_thread(point_control, (input_queue, leg))
   canvas.show()
 
 def chassis_controller():
@@ -65,4 +63,4 @@ def chassis_controller():
   canvas.show()
 
 if __name__ == '__main__':
-  chassis_controller()
+  single_leg_controller()

@@ -42,7 +42,7 @@ class KinematicChain(object):
       self.inv_transform_funcs.append(inv_transform_func)
 
   def to_global(self, var_vals):
-    return self.transform_funcs[-1](var_vals)
+    return self.transform_funcs[-1](var_vals)[:4].T[0].tolist()
 
   # Returns points for each segment in the chain
   def get_all_segments(self, var_vals):

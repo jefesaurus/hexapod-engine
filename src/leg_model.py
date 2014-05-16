@@ -44,16 +44,25 @@ class RevoluteState(JointState):
     self.destination = destination
     self.angular_velocity = angular_velocity
 
+STEP_HEIGHT = 1
+OVERSHOOT_PERCENT = .5
+ESTIMATE_REFRESH_RATE=.05
 
 MAX_ANGULAR_VELOCITY = 1.
-MAX_UPDATE_INTERVAL = 10
 class LegModel(object):
   def __init__(self, revolute_joints, ik_func):
     self.frame = kc.KinematicChain(revolute_joints)
     self.joint_states = [RevoluteState(joint) for joint in revolute_joints]
     self.ik_func = ik_func
-    self.destination = None
-    self.end_time = None
+
+    # For interpolation
+    self.deadline = 0
+    self.current_time = 0
+    self.interval_estimate = ESTIMATE_REFRESH_RATE
+    self.p0 = None
+    self.p1 = None
+    self.p2 = None
+    self.p3 = None
     
   def get_ik_solution(self, x, y, z):
     return self.ik_func(self, self.frame, x, y, z)
@@ -62,12 +71,11 @@ class LegModel(object):
     for state, angle in zip(self.joint_states, angles):
       state.set_theta(angle)
 
-  def update_state(self, time_elapsed):
+  def update_leg(self, time_elapsed):
     for joint in self.joint_states:
       joint.update_state(time_elapsed)
 
-  def set_command(self, x, y, z): # Commanded point must be in leg's frame
-    self.destination = (x, y, z)
+  def set_joint_commands(self, x, y, z): # Commanded point must be in leg's frame
     ik_solutions = self.ik_func(self.frame, x, y, z)
     if len(ik_solutions) > 0:
       pairs = zip(self.joint_states, ik_solutions[0])
@@ -75,6 +83,9 @@ class LegModel(object):
       # so they finish at the same time.
       completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
       max_time = max(max(completion_times), .00000001)
+      #if max_time > self.interval_estimate:
+      #  print 'TOO FAST: ' + str(max_time) + '\n'
+
       for (joint, angle), time in zip(pairs, completion_times):
         joint.set_command(angle, MAX_ANGULAR_VELOCITY*time/max_time)
 
@@ -86,27 +97,36 @@ class LegModel(object):
     angles = [segment.current_theta for segment in self.joint_states]
     return self.frame.to_global(angles)
 
+  def set_command(self, x, y, z, deadline):
+    self.deadline = deadline
+    self.current_time = 0
+    cx, cy, cz,_ = self.get_end_effector()
+    self.p0 = (cx, cy, cz)
+    self.p1 = (cx, cy, cz + STEP_HEIGHT)
+    self.p2 = (x, y, z + STEP_HEIGHT)
+    self.p3 = (x,y,z)
+    #print str(self.p0) + ' to ' + str(self.p3) + ' in: ' + str(self.deadline) + '\n'
 
-class LegController(object):
-  def __init__(self, leg_model, ik_func):
-    self.leg_model = leg_model
-    self.ik_func = ik_func
+  def update_state(self, time_elapsed):
+    self.current_time += time_elapsed
+    self.interval_estimate = .5*self.interval_estimate + .5*time_elapsed
+    if self.deadline > 0 and self.p0 is not None:
+      dest_point = min((self.current_time + self.interval_estimate)/self.deadline, 1)
+      #print str(dest_point) + '\n'
+      if dest_point < 1:
+        x = cubic_bezier(dest_point, self.p0[0], self.p1[0], self.p2[0], self.p3[0])
+        y = cubic_bezier(dest_point, self.p0[1], self.p1[1], self.p2[1], self.p3[1])
+        z = cubic_bezier(dest_point, self.p0[2], self.p1[2], self.p2[2], self.p3[2])
+        self.set_joint_commands(x, y, z)
+      else:
+        self.set_joint_commands(self.p3[0], self.p3[1], self.p3[2])
+    self.update_leg(time_elapsed)
 
-  def set_command(self, x, y, z): # Commanded point must be in leg's frame
-    self.destination = (x, y, z)
-    ik_solutions = self.ik_func(self.frame, x, y, z)
-    if len(ik_solutions) > 0:
-      pairs = zip(self.joint_states, ik_solutions[0])
-      # Figure out which one will take the longest, and scale all of speeds
-      # so they finish at the same time.
-      completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
-      max_time = max(max(completion_times), .00000001)
-      for (joint, angle), time in zip(pairs, completion_times):
-        joint.set_command(angle, MAX_ANGULAR_VELOCITY*time/max_time)
+def cubic_bezier(t, p0, p1, p2, p3):
+  return ((1-t)**3)*p0 + ((1-t)**2)*3*t*p1 + (t**2)*3*(1-t)*p2 + (t**3)*p3
 
 
-
-
+    
 def get_test_leg():
   coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
   femur = kc.RevoluteJoint('femur', 0, 1.5, 0, min_theta=-math.pi/2, max_theta=math.pi/2)
