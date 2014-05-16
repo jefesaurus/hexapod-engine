@@ -68,6 +68,37 @@ def single_leg_controller():
   leg_controller_process.join()
   model_leg_process.join()
 
+def chassis_controller():
+  import chassis_model as cm
+  import chassis_controller as cc
+  import model_animator as ma
+  from multiprocessing import Pipe
+
+  # Set up leg
+  model_chassis = cm.get_test_chassis() 
+  chassis_controller = cc.ChassisController(cm.get_test_chassis())
+
+  # Inter-thread/process communication pipes
+  step_command_output, step_command_input = Pipe()
+  servo_command_output, servo_command_input = Pipe()
+  segment_output, segment_input = Pipe()
+
+  # Threads and processes
+  thread.start_new_thread(point_keyboard, (step_command_input,))
+  chassis_controller_process = Process(target=cc.chassis_controller_updater, args=(chassis_controller, step_command_output, servo_command_input))
+  model_chassis_process = Process(target=cm.chassis_model_updater, args=(model_chassis, servo_command_output, segment_input))
+  segment_supplier = ma.SegmentSupplier(segment_output)
+
+  chassis_controller_process.start()
+  model_chassis_process.start()
+
+  canvas = ma.Canvas()
+  canvas.register_drawable(segment_supplier)
+  canvas.show()
+
+  chassis_controller_process.join()
+  model_chassis_process.join()
+
 if __name__ == '__main__':
-  single_leg_controller()
+  chassis_controller()
   #testt_controller()

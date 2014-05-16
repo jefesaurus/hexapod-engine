@@ -38,9 +38,9 @@ class RevoluteState(JointState):
       else:
         self.set_theta(self.destination)
 
-  def set_command(self, destination, angular_velocity):
-    self.destination = destination
-    self.angular_velocity = angular_velocity
+  def set_command(self, joint_command):
+    self.destination = joint_command[0]
+    self.angular_velocity = joint_command[1]
 
 class LegModel(object):
   def __init__(self, revolute_joints):
@@ -55,9 +55,9 @@ class LegModel(object):
     for joint in self.joint_states:
       joint.update_state(time_elapsed)
 
-  def set_joint_commands(self, angles, velocities): # Commanded point must be in leg's frame
-    for (joint, angle, velocity) in zip(self.joint_states, angles, velocities):
-      joint.set_command(angle, velocity)
+  def set_joint_commands(self, joint_commands): # Commanded point must be in leg's frame
+    for (joint, joint_command) in zip(self.joint_states, joint_commands):
+      joint.set_command(joint_command)
 
   def get_segments(self):
     angles = [joint.current_theta for joint in self.joint_states]
@@ -82,7 +82,7 @@ def leg_model_updater(leg_model, servo_command_input, segment_output):
         segment_output.send('KILL')
         return
     if command is not None:
-      leg_model.set_joint_commands(command[0], command[1])
+      leg_model.set_joint_commands(command)
     current_time = time.time()
     leg_model.update_state(current_time - last_time)
     last_time = current_time

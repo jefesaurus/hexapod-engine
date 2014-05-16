@@ -42,7 +42,7 @@ class LegController(object):
       completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
       max_time = max(max(completion_times), .00000001)
       joint_velocities = [MAX_ANGULAR_VELOCITY*time/max_time for time in completion_times]
-      return (ik_solutions[0], joint_velocities)
+      return zip(ik_solutions[0], joint_velocities)
     else:
       return None
 
@@ -57,7 +57,7 @@ class LegController(object):
         self.deadline = -1
       (x, y, z) = self.move_interpolator(progress)
       joint_commands = self.get_joint_commands(x, y, z)
-      self.sim_leg.set_joint_commands(joint_commands[0], joint_commands[1])
+      self.sim_leg.set_joint_commands(joint_commands)
       return joint_commands
     return None
 

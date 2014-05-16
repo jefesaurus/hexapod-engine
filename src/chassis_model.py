@@ -2,6 +2,7 @@ import math
 import leg_model as lm
 import pose
 from utils.point_marker import PointMarker
+import time
 
 
 SHOW_COMMANDED_POINT = True
@@ -16,8 +17,6 @@ class Chassis:
       self.base_segments = [(leg_points[x-1], leg_points[x]) for x in xrange(self.num_legs)]
     else:
       self.base_segments = []
-    if SHOW_COMMANDED_POINT:
-      self.markers = [PointMarker() for i in range(self.num_legs)]
 
   def local_to_global(self, point):
     return self.current_pose.from_frame_mat.dot(point).tolist()
@@ -29,21 +28,34 @@ class Chassis:
     segments = [(self.local_to_global(p1), self.local_to_global(p2)) for (p1, p2) in self.base_segments]
     for i, leg in enumerate(self.legs):
       segments.extend([(self.leg_to_global(i, p1), self.leg_to_global(i, p2)) for (p1, p2) in leg.get_segments()])
-    if SHOW_COMMANDED_POINT:
-      for i, marker in enumerate(self.markers):
-        segments.extend([(self.leg_to_global(i, p1), self.leg_to_global(i, p2)) for (p1, p2) in marker.get_segments()])
     return segments
 
   def update_state(self, time_elapsed):
     for leg in self.legs:
       leg.update_state(time_elapsed)
 
-  def set_command(self, x, y, z):
-    for leg in self.legs:
-      leg.set_command(x, y, z)
-    if SHOW_COMMANDED_POINT:
-      for marker in self.markers:
-        marker.set_command(x,y,z)
+  def set_command(self, leg_commands):
+    for (leg_index, joint_commands) in leg_commands:
+      self.legs[leg_index].set_joint_commands(joint_commands)
+
+UPDATE_INTERVAL = .02
+def chassis_model_updater(chassis_model, servo_command_input, segment_output):
+  last_time = time.time()
+  while True:
+    start_time = time.time()
+    command = None
+    while servo_command_input.poll():
+      command = servo_command_input.recv()
+      if command == 'KILL':
+        segment_output.send('KILL')
+        return
+    if command is not None:
+      chassis_model.set_command(command)
+    current_time = time.time()
+    chassis_model.update_state(current_time - last_time)
+    last_time = current_time
+    segment_output.send(chassis_model.get_segments())
+    time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
 
 
 def get_test_chassis():
