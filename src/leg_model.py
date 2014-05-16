@@ -1,6 +1,5 @@
 import kinematic_chain as kc
-from ik_3dof import IK_3DoF
-
+import time
 import math
 
 # A revolute joint with state about the angle, range, speed etc.
@@ -15,7 +14,6 @@ class JointState(object):
       self.current_d = 0
     if kinematic_pair.theta is None:
       self.current_theta = 0
-
 
 class RevoluteState(JointState):
   def __init__(self, revolute_joint):
@@ -44,50 +42,22 @@ class RevoluteState(JointState):
     self.destination = destination
     self.angular_velocity = angular_velocity
 
-STEP_HEIGHT = 1
-OVERSHOOT_PERCENT = .5
-ESTIMATE_REFRESH_RATE=.05
-
-MAX_ANGULAR_VELOCITY = 1.
 class LegModel(object):
-  def __init__(self, revolute_joints, ik_func):
+  def __init__(self, revolute_joints):
     self.frame = kc.KinematicChain(revolute_joints)
     self.joint_states = [RevoluteState(joint) for joint in revolute_joints]
-    self.ik_func = ik_func
-
-    # For interpolation
-    self.deadline = 0
-    self.current_time = 0
-    self.interval_estimate = ESTIMATE_REFRESH_RATE
-    self.p0 = None
-    self.p1 = None
-    self.p2 = None
-    self.p3 = None
-    
-  def get_ik_solution(self, x, y, z):
-    return self.ik_func(self, self.frame, x, y, z)
 
   def set_angles(self, angles):
     for state, angle in zip(self.joint_states, angles):
       state.set_theta(angle)
 
-  def update_leg(self, time_elapsed):
+  def update_state(self, time_elapsed):
     for joint in self.joint_states:
       joint.update_state(time_elapsed)
 
-  def set_joint_commands(self, x, y, z): # Commanded point must be in leg's frame
-    ik_solutions = self.ik_func(self.frame, x, y, z)
-    if len(ik_solutions) > 0:
-      pairs = zip(self.joint_states, ik_solutions[0])
-      # Figure out which one will take the longest, and scale all of speeds
-      # so they finish at the same time.
-      completion_times = [abs(joint.current_theta - angle)/MAX_ANGULAR_VELOCITY for joint, angle in pairs]
-      max_time = max(max(completion_times), .00000001)
-      #if max_time > self.interval_estimate:
-      #  print 'TOO FAST: ' + str(max_time) + '\n'
-
-      for (joint, angle), time in zip(pairs, completion_times):
-        joint.set_command(angle, MAX_ANGULAR_VELOCITY*time/max_time)
+  def set_joint_commands(self, angles, velocities): # Commanded point must be in leg's frame
+    for (joint, angle, velocity) in zip(self.joint_states, angles, velocities):
+      joint.set_command(angle, velocity)
 
   def get_segments(self):
     angles = [joint.current_theta for joint in self.joint_states]
@@ -97,41 +67,33 @@ class LegModel(object):
     angles = [segment.current_theta for segment in self.joint_states]
     return self.frame.to_global(angles)
 
-  def set_command(self, x, y, z, deadline):
-    self.deadline = deadline
-    self.current_time = 0
-    cx, cy, cz,_ = self.get_end_effector()
-    self.p0 = (cx, cy, cz)
-    self.p1 = (cx, cy, cz + STEP_HEIGHT)
-    self.p2 = (x, y, z + STEP_HEIGHT)
-    self.p3 = (x,y,z)
-    #print str(self.p0) + ' to ' + str(self.p3) + ' in: ' + str(self.deadline) + '\n'
 
-  def update_state(self, time_elapsed):
-    self.current_time += time_elapsed
-    self.interval_estimate = .5*self.interval_estimate + .5*time_elapsed
-    if self.deadline > 0 and self.p0 is not None:
-      dest_point = min((self.current_time + self.interval_estimate)/self.deadline, 1)
-      #print str(dest_point) + '\n'
-      if dest_point < 1:
-        x = cubic_bezier(dest_point, self.p0[0], self.p1[0], self.p2[0], self.p3[0])
-        y = cubic_bezier(dest_point, self.p0[1], self.p1[1], self.p2[1], self.p3[1])
-        z = cubic_bezier(dest_point, self.p0[2], self.p1[2], self.p2[2], self.p3[2])
-        self.set_joint_commands(x, y, z)
-      else:
-        self.set_joint_commands(self.p3[0], self.p3[1], self.p3[2])
-    self.update_leg(time_elapsed)
+UPDATE_INTERVAL = .02
+# Input: [(angle, velocity), ...]
+# Output: segments
+def leg_model_updater(leg_model, servo_command_input, segment_output):
+  last_time = time.time()
+  while True:
+    start_time = time.time()
+    command = None
+    while servo_command_input.poll():
+      command = servo_command_input.recv()
+      if command == 'KILL':
+        segment_output.send('KILL')
+        return
+    if command is not None:
+      leg_model.set_joint_commands(command[0], command[1])
+    current_time = time.time()
+    leg_model.update_state(current_time - last_time)
+    last_time = current_time
+    segment_output.send(leg_model.get_segments())
+    time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
 
-def cubic_bezier(t, p0, p1, p2, p3):
-  return ((1-t)**3)*p0 + ((1-t)**2)*3*t*p1 + (t**2)*3*(1-t)*p2 + (t**3)*p3
-
-
-    
 def get_test_leg():
   coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
   femur = kc.RevoluteJoint('femur', 0, 1.5, 0, min_theta=-math.pi/2, max_theta=math.pi/2)
   tibia = kc.RevoluteJoint('tibia', 0, 2.5, 0, min_theta=-math.pi, max_theta=0)
-  return LegModel([coxa, femur, tibia], IK_3DoF)
+  return LegModel([coxa, femur, tibia])
 
 def test():
   leg = get_test_leg()
