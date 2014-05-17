@@ -2,6 +2,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
+import pose
 
 class Canvas:
   def __init__(self):
@@ -42,13 +43,21 @@ class Canvas:
 
 
 class SegmentSupplier(object):
-  def __init__(self, segment_input):
+  def __init__(self, segment_input, pose_update_input):
     self.segment_input = segment_input
+    self.pose_update_input = pose_update_input
+    self.curr_pose = pose.Pose(0,0,0,0,0,0)
 
   def get_segments(self):
     segments = None
     while self.segment_input.poll():
       segments = self.segment_input.recv()
+    while self.pose_update_input.poll():
+      pose_tuple = self.pose_update_input.recv()
+      pose_tuple = [-elt for elt in pose_tuple]
+      self.curr_pose = pose.Pose.from_tuple(pose_tuple)
+    if segments is not None and segments != 'KILL':
+      segments = [(self.curr_pose.to_frame_c(p1[0], p1[1], p1[2]), self.curr_pose.to_frame_c(p2[0], p2[1], p2[2])) for (p1, p2) in segments]
     return segments
     
 def leg_test():

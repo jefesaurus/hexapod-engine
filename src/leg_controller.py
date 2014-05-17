@@ -4,7 +4,7 @@ from utils.interpolators import *
 import numpy as np
 import pose
 
-STEP_HEIGHT = .6
+STEP_HEIGHT = .8
 ESTIMATE_REFRESH_RATE=.05
 MAX_ANGULAR_VELOCITY = 10
 
@@ -29,14 +29,12 @@ class LegController(object):
   # Until then, use internal dead reckoning model
   def get_current_leg_state(self):
     cx, cy, cz, _ = self.sim_leg.get_end_effector()
-    #print (cx, cy, cz)
     return self.leg_to_global(cx, cy, cz)
 
   def set_base_pose(self, new_pose):
     self.base_pose = new_pose
     self.to_frame_mat = self.pose.to_frame_mat.dot(self.base_pose.to_frame_mat)
     self.from_frame_mat = self.base_pose.from_frame_mat.dot(self.pose.from_frame_mat)
-    #self.home_point = self.leg_to_global(2.5, 0, 0) 
 
   def global_to_leg(self, x, y, z):
     return self.to_frame_mat.dot((x,y,z,1)).tolist()[:3]
@@ -55,6 +53,7 @@ class LegController(object):
       #(sx, sy, sz) = self.global_to_leg()
       p1 = (cx, cy, STEP_HEIGHT)
       p2 = (x, y, STEP_HEIGHT)
+      #print start, self.dest, p1, p2
       self.move_interpolator = get_cubic_bezier_interpolator(start, p1, p2, self.dest)
     else:
       #print start, self.dest

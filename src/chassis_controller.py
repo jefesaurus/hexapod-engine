@@ -79,13 +79,13 @@ class ChassisController(object):
 UPDATE_INTERVAL = .02
 # Input: tuples with (x, y, z, linear?)
 # Output: [(angle, velocity), ...]
-def chassis_controller_updater(controller, step_command_input, servo_command_output):
+def chassis_controller_updater(controller, chassis_command_input, servo_command_output, pose_update_output):
   last_time = time.time()
   while True:
     start_time = time.time()
     command = None
-    while step_command_input.poll():
-      command = step_command_input.recv()
+    while chassis_command_input.poll():
+      command = chassis_command_input.recv()
       if command == 'KILL':
         servo_command_output.send('KILL')
         return
@@ -96,6 +96,7 @@ def chassis_controller_updater(controller, step_command_input, servo_command_out
     last_time = current_time
     if servo_commands is not None:
       servo_command_output.send(servo_commands)
+    pose_update_output.send(controller.current_pose.as_tuple())
     time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
 
 if __name__ == '__main__':

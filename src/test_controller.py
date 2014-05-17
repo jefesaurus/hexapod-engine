@@ -1,11 +1,13 @@
 import thread
+import time
+import threading
 from math import pi,cos,sin
 from multiprocessing import Process, Queue
 from utils.getch import _Getch
 
-def point_keyboard(step_command_output):
+def point_keyboard(chassis_command_output, command_lock):
   delta = .5
-  x, y, z = 0.0, 0, 0
+  x, y, z = 0.0, 0.5, 0
   bezier = True
 
   getch = _Getch()
@@ -14,24 +16,33 @@ def point_keyboard(step_command_output):
     next_char = _Getch()
     while True:
       k = next_char()
+      command_lock.acquire()
       if k == 'q':
-        step_command_output.send('KILL')
+        chassis_command_output.send('KILL')
         return
       elif k == 'w':
-        step_command_output.send(('POSE', 0, 0, 0, 0,0,-delta/4,.25))
+        chassis_command_output.send(('POSE', 0, 0, 0, 0,0,-delta/4,.25))
       elif k == 'd':
-        step_command_output.send(('POSE', 0, 0, 0, 0,delta/4,0,.25))
+        chassis_command_output.send(('POSE', 0, 0, 0, 0,delta/4,0,.25))
       elif k == 's':
-        step_command_output.send(('POSE', 0, 0, 0, 0,0,delta/4,.25))
+        chassis_command_output.send(('POSE', 0, 0, 0, 0,0,delta/4,.25))
       elif k == 'a':
-        step_command_output.send(('POSE', 0, 0, 0, 0,-delta/4,0,.25))
+        chassis_command_output.send(('POSE', 0, 0, 0, 0,-delta/4,0,.25))
       elif k == 'o':
-        step_command_output.send(('POSE', 0, 0, delta, 0,0,0,.25))
+        chassis_command_output.send(('POSE', 0, 0, delta, 0,0,0,.25))
       elif k == 'l':
-        step_command_output.send(('POSE', 0, 0, -delta, 0,0,0,.25))
-      elif k == 'r':
-        step_command_output.send(('STEP', x, y, .25))
-      #step_command_output.send((x,y,z, 1.0, bezier))
+        chassis_command_output.send(('POSE', 0, 0, -delta, 0,0,0,.25))
+      command_lock.release()
+
+def step_sender(chassis_command_output, command_lock):
+  x = 0.0
+  y = 0.5
+  step_interval = .3
+  while True:
+    command_lock.acquire() 
+    chassis_command_output.send(('STEP', x, y, step_interval))
+    command_lock.release() 
+    time.sleep(step_interval)
 
 
 def pipe_echo(input_pipe):
@@ -85,15 +96,18 @@ def chassis_controller():
   chassis_controller = cc.ChassisController(cm.get_test_chassis())
 
   # Inter-thread/process communication pipes
-  step_command_output, step_command_input = Pipe()
+  chassis_command_output, chassis_command_input = Pipe()
+  pose_update_output, pose_update_input = Pipe()
   servo_command_output, servo_command_input = Pipe()
   segment_output, segment_input = Pipe()
+  command_lock = threading.Lock()
 
   # Threads and processes
-  thread.start_new_thread(point_keyboard, (step_command_input,))
-  chassis_controller_process = Process(target=cc.chassis_controller_updater, args=(chassis_controller, step_command_output, servo_command_input))
+  thread.start_new_thread(point_keyboard, (chassis_command_input,command_lock))
+  thread.start_new_thread(step_sender, (chassis_command_input,command_lock))
+  chassis_controller_process = Process(target=cc.chassis_controller_updater, args=(chassis_controller, chassis_command_output, servo_command_input, pose_update_input))
   model_chassis_process = Process(target=cm.chassis_model_updater, args=(model_chassis, servo_command_output, segment_input))
-  segment_supplier = ma.SegmentSupplier(segment_output)
+  segment_supplier = ma.SegmentSupplier(segment_output, pose_update_output)
 
   chassis_controller_process.start()
   model_chassis_process.start()
