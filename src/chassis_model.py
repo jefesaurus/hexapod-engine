@@ -41,26 +41,6 @@ class Chassis:
     for (leg_index, joint_commands) in leg_commands:
       self.legs[leg_index].set_joint_commands(joint_commands)
 
-UPDATE_INTERVAL = .02
-def chassis_model_updater(chassis_model, servo_command_input, segment_output):
-  last_time = time.time()
-  while True:
-    start_time = time.time()
-    command = None
-    while servo_command_input.poll():
-      command = servo_command_input.recv()
-      if command == 'KILL':
-        segment_output.send('KILL')
-        return
-    if command is not None:
-      chassis_model.set_command(command)
-    current_time = time.time()
-    chassis_model.update_state(current_time - last_time)
-    last_time = current_time
-    segment_output.send(chassis_model.get_segments())
-    time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
-
-
 def get_test_chassis():
   import math
   midwidth = 2.

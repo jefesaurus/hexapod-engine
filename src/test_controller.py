@@ -5,6 +5,8 @@ from math import pi,cos,sin
 from multiprocessing import Process, Queue
 from utils.getch import _Getch
 
+from state_update_loops import *
+
 def point_keyboard(chassis_command_output, command_lock):
   delta = .5
   x, y, z = 0.0, 0.5, 0
@@ -36,7 +38,7 @@ def point_keyboard(chassis_command_output, command_lock):
 
 def step_sender(chassis_command_output, command_lock):
   x = 0.0
-  y = 0.5
+  y = 1.2
   step_interval = .3
   while True:
     command_lock.acquire() 
@@ -105,8 +107,8 @@ def chassis_controller():
   # Threads and processes
   thread.start_new_thread(point_keyboard, (chassis_command_input,command_lock))
   thread.start_new_thread(step_sender, (chassis_command_input,command_lock))
-  chassis_controller_process = Process(target=cc.chassis_controller_updater, args=(chassis_controller, chassis_command_output, servo_command_input, pose_update_input))
-  model_chassis_process = Process(target=cm.chassis_model_updater, args=(model_chassis, servo_command_output, segment_input))
+  chassis_controller_process = Process(target=chassis_controller_updater, args=(chassis_controller, chassis_command_output, servo_command_input, pose_update_input))
+  model_chassis_process = Process(target=chassis_model_updater, args=(model_chassis, servo_command_output, segment_input))
   segment_supplier = ma.SegmentSupplier(segment_output, pose_update_output)
 
   chassis_controller_process.start()

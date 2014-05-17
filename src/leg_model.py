@@ -68,27 +68,6 @@ class LegModel(object):
     return self.frame.to_global(angles)
 
 
-UPDATE_INTERVAL = .02
-# Input: [(angle, velocity), ...]
-# Output: segments
-def leg_model_updater(leg_model, servo_command_input, segment_output):
-  last_time = time.time()
-  while True:
-    start_time = time.time()
-    command = None
-    while servo_command_input.poll():
-      command = servo_command_input.recv()
-      if command == 'KILL':
-        segment_output.send('KILL')
-        return
-    if command is not None:
-      leg_model.set_joint_commands(command)
-    current_time = time.time()
-    leg_model.update_state(current_time - last_time)
-    last_time = current_time
-    segment_output.send(leg_model.get_segments())
-    time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
-
 def get_test_leg():
   coxa = kc.RevoluteJoint('coxa', math.pi/2, 0.25, 0, max_theta = math.pi/3, min_theta=-math.pi/3)
   femur = kc.RevoluteJoint('femur', 0, 1.5, 0, min_theta=-math.pi/2, max_theta=math.pi/2)

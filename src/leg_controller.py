@@ -92,41 +92,6 @@ class LegController(object):
     return None
 
 
-UPDATE_INTERVAL = .02
-# Input: tuples with (x, y, z, linear?)
-# Output: [(angle, velocity), ...]
-def leg_controller_updater(controller, step_command_input, servo_command_output):
-  last_time = time.time()
-  while True:
-    start_time = time.time()
-    command = None
-    while step_command_input.poll():
-      command = step_command_input.recv()
-      if command == 'KILL':
-        servo_command_output.send('KILL')
-        return
-    if command is not None:
-      controller.set_command(command)
-    current_time = time.time()
-    servo_commands = controller.update_state(current_time - last_time)
-    last_time = current_time
-    if servo_commands is not None:
-      servo_command_output.send(servo_commands)
-    time.sleep(UPDATE_INTERVAL - (time.time() - start_time))
-    
-  
-
-# Parametric cubic bezier equation from p0 to p3
-# Initially traveling towards p1 from p0
-# Ends traveling to p3 from p2.
-#def get_cubic_bezier_interpolator(p0, p1, p2, p3):
-#  return lambda t: (((1-t)**3)*p0[0] + ((1-t)**2)*3*t*p1[0] + (t**2)*3*(1-t)*p2[0] + (t**3)*p3[0], 
-#                    ((1-t)**3)*p0[1] + ((1-t)**2)*3*t*p1[1] + (t**2)*3*(1-t)*p2[1] + (t**3)*p3[1], 
-#                    ((1-t)**3)*p0[2] + ((1-t)**2)*3*t*p1[2] + (t**2)*3*(1-t)*p2[2] + (t**3)*p3[2]) 
-
-#def get_linear_interpolator(p0, p1):
-#  return lambda t: ((1-t)*p0[0] + t*p1[0], (1-t)*p0[1] + t*p1[1], (1-t)*p0[2] + t*p1[2])
-
 def test():
   pass
 
