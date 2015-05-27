@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
+#include <time.h>   
+#include <math.h>
+
 
 typedef struct point point;
 struct point {
@@ -8,10 +10,6 @@ struct point {
   double y;
   double z;
 };
-
-extern point fk_math(double x, double y, double z, double, double, double);
-extern point fk_math_cache(double x, double y, double z, double, double, double);
-extern void trial();
 
 point fk_math_cache(double x, double y, double z, double theta_coxa, double theta_femur, double theta_tibia) {
   double sin_coxa = sin(theta_coxa);
@@ -25,15 +23,49 @@ point fk_math_cache(double x, double y, double z, double theta_coxa, double thet
   x*(1.0*sin_femur*cos_tibia + 1.0*sin_tibia*cos_femur) + y*(-1.0*sin_femur*sin_tibia + 1.0*cos_femur*cos_tibia) + 2.0*sin_femur*cos_tibia + 1.5*sin_femur + 2.0*sin_tibia*cos_femur};
 }
 
-void trial() {
-  int i;
-  for (i = 0; i < 1000000; i ++) {
-    fk_math_cache(1.0, 3.0, 4.0, -2.09439510239, 1.0471975512, 0.78539816339);
-  }
+point fk_math_cache_fixed(double x, double y, double z, double theta_coxa, double theta_femur, double theta_tibia) {
+  double sin_coxa = sin(theta_coxa);
+  double cos_coxa = cos(theta_coxa);
+  double sin_femur = sin(theta_femur);
+  double cos_femur = cos(theta_femur);
+  double sin_tibia = sin(theta_tibia);
+  double cos_tibia = cos(theta_tibia);
+  return (point){-2.0*sin_femur*sin_tibia*cos_coxa + 2.0*cos_coxa*cos_femur*cos_tibia + 1.5*cos_coxa*cos_femur + 0.5*cos_coxa,
+  - 2.0*sin_coxa*sin_femur*sin_tibia + 2.0*sin_coxa*cos_femur*cos_tibia + 1.5*sin_coxa*cos_femur + 0.5*sin_coxa,
+  2.0*sin_femur*cos_tibia + 1.5*sin_femur + 2.0*sin_tibia*cos_femur};
 }
 
 point fk_math(double x, double y, double z, double theta_coxa, double theta_femur, double theta_tibia) {
   return (point){x*(-sin(theta_femur)*sin(theta_tibia)*cos(theta_coxa) + cos(theta_coxa)*cos(theta_femur)*cos(theta_tibia)) + y*(-sin(theta_femur)*cos(theta_coxa)*cos(theta_tibia) - sin(theta_tibia)*cos(theta_coxa)*cos(theta_femur)) + 1.0*z*sin(theta_coxa) - 2.0*sin(theta_femur)*sin(theta_tibia)*cos(theta_coxa) + 2.0*cos(theta_coxa)*cos(theta_femur)*cos(theta_tibia) + 1.5*cos(theta_coxa)*cos(theta_femur) + 0.5*cos(theta_coxa),
   x*(-sin(theta_coxa)*sin(theta_femur)*sin(theta_tibia) + sin(theta_coxa)*cos(theta_femur)*cos(theta_tibia)) + y*(-sin(theta_coxa)*sin(theta_femur)*cos(theta_tibia) - sin(theta_coxa)*sin(theta_tibia)*cos(theta_femur)) - 1.0*z*cos(theta_coxa) - 2.0*sin(theta_coxa)*sin(theta_femur)*sin(theta_tibia) + 2.0*sin(theta_coxa)*cos(theta_femur)*cos(theta_tibia) + 1.5*sin(theta_coxa)*cos(theta_femur) + 0.5*sin(theta_coxa),
   x*(1.0*sin(theta_femur)*cos(theta_tibia) + 1.0*sin(theta_tibia)*cos(theta_femur)) + y*(-1.0*sin(theta_femur)*sin(theta_tibia) + 1.0*cos(theta_femur)*cos(theta_tibia)) + 2.0*sin(theta_femur)*cos(theta_tibia) + 1.5*sin(theta_femur) + 2.0*sin(theta_tibia)*cos(theta_femur)};
+}
+
+
+
+double trial() {
+  clock_t t1, t2;
+
+  point punto;
+  double x, y, z;
+
+  t1 = clock();  
+
+  int i;
+  for (i = 0; i < 1400000000; i ++) {
+    punto = fk_math_cache(0., 0., 0., -2.09439510239, 1.0471975512, 0.78539816339);
+    x += punto.x;
+    y += punto.y;
+    z += punto.z;
+  }
+  t2 = clock();   
+
+  float diff = (((float)t2 - (float)t1) / 1000000.0F ) * 1000;   
+  printf("Milliseconds: %f\n",diff);  
+  return (x+y+z);
+}
+
+int main( int argc, const char* argv[] ) {
+  double x = trial();
+  printf("Result: %f\n", x);
 }

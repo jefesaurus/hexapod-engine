@@ -37,6 +37,9 @@ class Pose:
   def from_tuple(cls, pt):
     return cls(pt[0], pt[1], pt[2], pt[3], pt[4], pt[5])
 
+  def add_delta(self, dx=0, dy=0, dz=0, dyaw=0, dpitch=0, droll=0):
+    return Pose(self.x + dx, self.y + dy, self.z + dz, self.yaw + dyaw, self.pitch + dpitch, self.roll + droll)
+
 
 def test():
   import random

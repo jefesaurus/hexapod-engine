@@ -9,7 +9,7 @@ TARGET := test_ik
 ifeq ($(DEBUG),1)
 CFLAGS := -DDEBUG -O0 $(CFLAGS)
 else
-CFLAGS := -O3 -DNDEBUG $(CFLAGS)
+CFLAGS := -O3 -ffast-math -DNDEBUG $(CFLAGS)
 endif
 CFLAGS := $(CFLAGS)
 

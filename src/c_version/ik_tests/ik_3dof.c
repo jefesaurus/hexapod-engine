@@ -95,8 +95,11 @@ void test() {
 }
 
 int main(int argc, char** argv) {
-  int count = atoi(argv[1]);
-  trial(count);
-  test();
+  if (argc < 2) {
+    printf("argument 1 must be the number of iterations.\n");
+  } else {
+    int count = atoi(argv[1]);
+    trial(count);
+  }
   return 0;
 }

@@ -35,6 +35,8 @@ class LegController(object):
     self.base_pose = new_pose
     self.to_frame_mat = self.pose.to_frame_mat.dot(self.base_pose.to_frame_mat)
     self.from_frame_mat = self.base_pose.from_frame_mat.dot(self.pose.from_frame_mat)
+    self.home_point = self.leg_to_global(2.5, 0, 0); 
+    self.home_point[2] = 0 # Make sure the home point is in the ground plane
 
   def global_to_leg(self, x, y, z):
     return self.to_frame_mat.dot((x,y,z,1)).tolist()[:3]

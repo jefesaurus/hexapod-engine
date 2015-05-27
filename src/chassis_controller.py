@@ -16,55 +16,88 @@ class ChassisController(object):
     self.leg_controllers = [lc.LegController(leg, IK_3DoF, legpose, self.current_pose) for leg, legpose in zip(self.sim_chassis.legs, self.sim_chassis.leg_poses)]
     self.step_state = True
 
-    # Movement state
-    self.deadline = 0
+    # Shared movement state
     self.current_time = 0
     self.interval_estimate = ESTIMATE_REFRESH_RATE
+
+    # Pose state
+    self.pose_deadline = 0
+    self.pose_start_time = 0
     self.pose_interpolator = None
+
+    # Step state
+    self.step_deadline = 0
+    self.step_start_time = 0
+    self.current_step = 0
+
+    # Gait: iterable of steps, each step is ((legs to pick up), deadline, progress before next step)
+    self.gait = (((0, 2, 4), 1., 1.), ((1, 3, 5), 1., 1.)) 
+
+    # Current heading/rotation
+    self.x_vel = 0
+    self.y_vel = 0
+    self.r_vel = 0
       
   def set_command(self, cmd):
-    if cmd[0] == 'STEP':
-      self.step(cmd[1], cmd[2], cmd[3])
-    elif cmd[0] == 'POSE':
+    if cmd[0] == 'POSE':
       self.update_pose_command(cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], cmd[6], cmd[7])
+    elif cmd[0] == 'MOVE':
+      self.movement_command(cmd[1], cmd[2], cmd[3])
 
-  def step(self, x, y, deadline):
-    if self.step_state:
-      x *= -1
-      y *= -1
-      self.step_state = False
-    else:
-      self.step_state = True
-    for i in [0,2,4]:
-      hp = self.leg_controllers[i].home_point
-      self.leg_controllers[i].set_command((hp[0] + x, hp[1] + y, hp[2], deadline, self.step_state))
-
-    for i in [1,3,5]:
-      hp = self.leg_controllers[i].home_point
-      self.leg_controllers[i].set_command((hp[0] - x, hp[1] - y, hp[2], deadline, not self.step_state))
+  def movement_command(self, x, y, rot):
+    self.x_vel = x
+    self.y_vel = y
+    self.r_vel = rot
+    if self.step_deadline <= 0:
+      self.start_gait()
 
   def update_pose_command(self, dx, dy, dz, dyaw, dpitch, droll, deadline):
-    self.deadline = deadline
-    self.current_time = 0
+    self.pose_start_time = self.current_time
+    self.pose_deadline = deadline
     start = self.current_pose.as_tuple()
     end = (start[0] + dx, start[1] + dy, start[2] + dz, start[3] + dyaw, start[4] + dpitch, start[5] + droll)
     self.pose_interpolator = get_linear_interpolator(start, end)
 
+  def start_gait(self):
+    self.next_step()
+
+  def next_step(self):
+    self.current_step = (self.current_step + 1) % len(self.gait)
+    legs, deadline, next_start = self.gait[self.current_step]
+    self.step_deadline = deadline
+    self.step_start_time = self.current_time
+    next_pose = self.current_pose.add_delta(dx=self.x_vel, dy=self.y_vel, dyaw=self.r_vel)
+    self.update_pose_command(self.x_vel, self.y_vel, 0,0,0,0, deadline)
+    for i in legs:
+      hp = self.leg_controllers[i].home_point
+      self.leg_controllers[i].set_command((hp[0] - self.x_vel, hp[1] - self.y_vel, hp[2], deadline, True))
+
   def update_state(self, time_elapsed):
     self.sim_chassis.update_state(time_elapsed)
 
-    # Update current pose if necessary
+    # Update internal time
     self.current_time += time_elapsed
     self.interval_estimate = .5*self.interval_estimate + .5*time_elapsed
-    if self.deadline > 0 and self.pose_interpolator is not None:
-      progress = (self.current_time + self.interval_estimate)/self.deadline
+
+    # Update current pose
+    if self.pose_deadline > 0 and self.pose_interpolator is not None:
+      progress = (self.current_time + self.interval_estimate - self.pose_start_time)/self.step_deadline
       if progress > 1:
         progress = 1
-        self.deadline = -1
+        self.pose_deadline = -1
+        self.pose_start_time = -1
       np = self.pose_interpolator(progress)
       self.current_pose = pose.Pose.from_tuple(np)
       for leg_controller in self.leg_controllers:
         leg_controller.set_base_pose(self.current_pose)
+
+    # Update step progress
+    if self.step_deadline > 0:
+      current_progress = (self.current_time - self.step_start_time)/self.step_deadline
+      if current_progress > 1:
+        self.step_deadline = -1
+        self.step_start_time = -1
+        self.next_step()
 
     # Calculate and send out leg commands
     leg_commands = []

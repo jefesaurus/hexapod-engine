@@ -1,6 +1,7 @@
 import time
 
-UPDATE_INTERVAL = .01
+COMMAND_UPDATE_INTERVAL = .05
+MODEL_UPDATE_INTERVAL = .05
 
 
 # Args:
@@ -30,7 +31,7 @@ def generic_update_loop(input_pipe_func, update_func, output_func_pipe):
       output_signal = output_func()
       if output_signal is not None:
         output_pipe.send(output_func())
-    time_left = UPDATE_INTERVAL - (time.time() - start_time)
+    time_left = MODEL_UPDATE_INTERVAL - (time.time() - start_time)
     if time_left > 0:
       time.sleep(time_left)
 
@@ -55,7 +56,7 @@ def chassis_controller_updater(controller, chassis_command_input, servo_command_
     if servo_commands is not None:
       servo_command_output.send(servo_commands)
     pose_update_output.send(controller.current_pose.as_tuple())
-    time_left = UPDATE_INTERVAL - (time.time() - start_time)
+    time_left = COMMAND_UPDATE_INTERVAL - (time.time() - start_time)
     if time_left > 0:
       time.sleep(time_left)
 
@@ -76,7 +77,7 @@ def chassis_model_updater(chassis_model, servo_command_input, segment_output):
     chassis_model.update_state(current_time - last_time)
     last_time = current_time
     segment_output.send(chassis_model.get_segments())
-    time_left = UPDATE_INTERVAL - (time.time() - start_time)
+    time_left = MODEL_UPDATE_INTERVAL - (time.time() - start_time)
     if time_left > 0:
       time.sleep(time_left)
 
@@ -101,7 +102,7 @@ def leg_controller_updater(controller, step_command_input, servo_command_output)
     last_time = current_time
     if servo_commands is not None:
       servo_command_output.send(servo_commands)
-    time_left = UPDATE_INTERVAL - (time.time() - start_time)
+    time_left = COMMAND_UPDATE_INTERVAL - (time.time() - start_time)
     if time_left > 0:
       time.sleep(time_left)
 
@@ -124,7 +125,7 @@ def leg_model_updater(leg_model, servo_command_input, segment_output):
     leg_model.update_state(current_time - last_time)
     last_time = current_time
     segment_output.send(leg_model.get_segments())
-    time_left = UPDATE_INTERVAL - (time.time() - start_time)
+    time_left = MODEL_UPDATE_INTERVAL - (time.time() - start_time)
     if time_left > 0:
       time.sleep(time_left)
 

@@ -36,6 +36,38 @@ def point_keyboard(chassis_command_output, command_lock):
         chassis_command_output.send(('POSE', 0, 0, -delta, 0,0,0,.25))
       command_lock.release()
 
+def move_keyboard(chassis_command_output, command_lock):
+  delta = .5
+  x_vel, y_vel, r_vel = 0.0, 0.0, 0.0
+
+  getch = _Getch()
+  while True:
+    print 'Press WASD-OL-I or q'
+    next_char = _Getch()
+    while True:
+      k = next_char()
+      command_lock.acquire()
+      if k == 'q':
+        chassis_command_output.send('KILL')
+        return
+      elif k == 'w':
+        y_vel += delta
+        chassis_command_output.send(('MOVE', x_vel, y_vel, r_vel))
+      elif k == 'd':
+        x_vel += delta
+        chassis_command_output.send(('MOVE', x_vel, y_vel, r_vel))
+      elif k == 's':
+        y_vel -= delta
+        chassis_command_output.send(('MOVE', x_vel, y_vel, r_vel))
+      elif k == 'a':
+        x_vel -= delta
+        chassis_command_output.send(('MOVE', x_vel, y_vel, r_vel))
+      elif k == 'o':
+        chassis_command_output.send(('POSE', 0, 0, delta, 0,0,0,.25))
+      elif k == 'l':
+        chassis_command_output.send(('POSE', 0, 0, -delta, 0,0,0,.25))
+      command_lock.release()
+
 def step_sender(chassis_command_output, command_lock):
   x = 0.0
   y = 1.2
@@ -105,7 +137,7 @@ def chassis_controller():
   command_lock = threading.Lock()
 
   # Threads and processes
-  thread.start_new_thread(point_keyboard, (chassis_command_input,command_lock))
+  thread.start_new_thread(move_keyboard, (chassis_command_input,command_lock))
   thread.start_new_thread(step_sender, (chassis_command_input,command_lock))
   chassis_controller_process = Process(target=chassis_controller_updater, args=(chassis_controller, chassis_command_output, servo_command_input, pose_update_input))
   model_chassis_process = Process(target=chassis_model_updater, args=(model_chassis, servo_command_output, segment_input))
