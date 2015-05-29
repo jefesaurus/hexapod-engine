@@ -1,52 +1,28 @@
-WRKDIR = `pwd`
+CC := g++ # This is the main compiler
+# CC := clang --analyze # and comment out the linker last line for sanity
 
-CC = gcc
-CPP = g++
-LD = g++
-AR = ar
+SRCDIR := src
+BUILDDIR := build
+TARGET := bin/sim
+ 
+SRCEXT := cpp
+SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
+CFLAGS := -g -Wall -O3 -std=c++11
+LIB := -lglut -lGLU -lGL -lm
+INC := -I include -I ./eigen
 
-INC = 
-CFLAGS = -Wall -O2
-RESINC = 
-RCFLAGS = 
-LIBDIR = 
-LIB = -lglut -lGLU -lGL -lm
-LDFLAGS =
+$(TARGET): $(OBJECTS)
+	@echo " Linking..."
+	@echo " $(CC) $^ -o $(TARGET) $(LIB)"; $(CC) $^ -o $(TARGET) $(LIB)
 
-INC_RELEASE = $(INC)
-CFLAGS_RELEASE = $(CFLAGS)
-RESINC_RELEASE = $(RESINC)
-RCFLAGS_RELEASE = $(RCFLAGS)
-LIBDIR_RELEASE = $(LIBDIR)
-LIB_RELEASE = $(LIB)
-LDFLAGS_RELEASE = $(LDFLAGS) -s
-OBJDIR_RELEASE = objs
-DEP_RELEASE = 
-OUTDIR_RELEASE = bin
-OUT_RELEASE = simulator
+$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(BUILDDIR)
+	@mkdir -p $(shell dirname $@)
+	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/Timer.o
+clean:
+	@echo " Cleaning..."; 
+	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
 
-all: release
-
-clean: clean_release
-
-release: $(OUT_RELEASE)
-
-$(OUT_RELEASE): $(OBJ_RELEASE) $(DEP_RELEASE)
-	test -d $(OUTDIR_RELEASE) || mkdir -p $(OUTDIR_RELEASE)
-	$(LD) $(LDFLAGS_RELEASE) $(LIBDIR_RELEASE) -o $(OUTDIR_RELEASE)/$(OUT_RELEASE) $(OBJ_RELEASE) $(LIB_RELEASE)
-
-$(OBJDIR_RELEASE)/main.o: main.cpp
-	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
-	$(CPP) $(CFLAGS_RELEASE) $(INC_RELEASE) -c -o $(OBJDIR_RELEASE)/main.o main.cpp
-
-$(OBJDIR_RELEASE)/Timer.o: Timer.cpp
-	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
-	$(CPP) $(CFLAGS_RELEASE) $(INC_RELEASE) -c -o $(OBJDIR_RELEASE)/Timer.o Timer.cpp
-
-clean_release:
-	rm -rf $(OBJDIR_RELEASE) $(OUTDIR_RELEASE)
-
-.PHONY: clean clean_release
-
+.PHONY: clean

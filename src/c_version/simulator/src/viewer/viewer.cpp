@@ -11,7 +11,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdio.h>
-#include "Timer.h"
+#include "timer.h"
+#include "viewer.h"
 
 
 // GLUT CALLBACK functions ////////////////////////////////////////////////////
@@ -40,6 +41,9 @@ void showInfo();
 void showTransferRate();
 void printTransferRate();
 
+// Callback that draws the main scene:
+void (*DrawScene)();
+
 
 // constants
 const int    SCREEN_WIDTH    = 400;
@@ -66,15 +70,17 @@ Timer timer;
 float fps;
 float last_draw_time;
 
-
 ///////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv) {
+void StartWindow(void (*draw_func)()) {
+  DrawScene = draw_func;
   initSharedMem();
 
   // register exit callback
   atexit(exitCB);
 
   // init GLUT and GL
+  int argc = 1;
+  char *argv[1] = {(char*)"Simulator"};
   initGLUT(argc, argv);
   initGL();
 
@@ -85,8 +91,6 @@ int main(int argc, char **argv) {
   // window will be shown and display callback is triggered by events
   // NOTE: this call never return main().
   glutMainLoop(); /* Start GLUT event-processing loop */
-
-  return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -209,6 +213,7 @@ void drawString3D(const char *str, float pos[3], float color[4], void *font) {
 void DrawGeometry() {
   glLineWidth(5.0); 
   glColor3f(1.0, 0.0, 0.0);
+  /*
 
   glBegin(GL_LINES);
   glVertex3f(0.0, 0.0, 0.0);
@@ -218,6 +223,8 @@ void DrawGeometry() {
   glVertex3f(1.0, 0.5, 0.5);
   glVertex3f(-1.0, 0.5, 0.5);
   glEnd();
+  */
+  DrawScene();
 
   glColor3f(0.0, 0.0, 1.0);
   glBegin(GL_QUADS);
@@ -228,6 +235,8 @@ void DrawGeometry() {
   glTexCoord2f(0.0f, 1.0f);   glVertex3f(-1.0f,  1.0f, 0.0f);
   glEnd();
 }
+
+
 
 
 

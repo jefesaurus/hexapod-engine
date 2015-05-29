@@ -43,17 +43,19 @@ point fk_math(double x, double y, double z, double theta_coxa, double theta_femu
 
 
 
-double trial() {
+double trialA() {
   clock_t t1, t2;
 
   point punto;
-  double x, y, z;
+  double x = 0;
+  double y = 0;
+  double z = 0;
 
   t1 = clock();  
 
   int i;
   for (i = 0; i < 1400000000; i ++) {
-    punto = fk_math_cache(0., 0., 0., -2.09439510239, 1.0471975512, 0.78539816339);
+    punto = fk_math_cache_fixed(0., 0., 0., -2.09439510239, 1.0471975512, 0.78539816339);
     x += punto.x;
     y += punto.y;
     z += punto.z;
@@ -65,7 +67,47 @@ double trial() {
   return (x+y+z);
 }
 
+double trialB() {
+  clock_t t1, t2;
+
+  point punto;
+  double x = 0;
+  double y = 0;
+  double z = 0;
+
+
+
+  t1 = clock();  
+
+  int i;
+  for (i = 0; i < 1400000000; i ++) {
+    punto = fk_math(0., 0., 0., -2.09439510239, 1.0471975512, 0.78539816339);
+    x += punto.x;
+    y += punto.y;
+    z += punto.z;
+  }
+  t2 = clock();   
+
+  float diff = (((float)t2 - (float)t1) / 1000000.0F ) * 1000;   
+  printf("Milliseconds: %f\n",diff);  
+  return (x+y+z);
+}
+
+/*
+Compiled with:
+gcc demo.c -lm -Wall -O3
+
+Experimental Output:
+Milliseconds: 1211.336914
+Result: 3122650734.759146
+Milliseconds: 1209.632935
+Result: 3122650734.759146
+
+Conclusion: compiler is 2smart
+*/
 int main( int argc, const char* argv[] ) {
-  double x = trial();
+  double y = trialB();
+  printf("Result: %f\n", y);
+  double x = trialA();
   printf("Result: %f\n", x);
 }
