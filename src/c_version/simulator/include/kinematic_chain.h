@@ -16,6 +16,7 @@ protected:
   void GenerateDHMatrices();
 
 public:
+  KinematicPair() {};
   KinematicPair(double _alpha, double _r, double _d, double _theta) : alpha(_alpha), r(_r), d(_d), theta(_theta), params_changed(true) {};
 
   // Accessors
@@ -44,21 +45,37 @@ class RevoluteJoint : public KinematicPair {
   double min_theta, max_theta;
 
 public:
+  RevoluteJoint() {};
   RevoluteJoint(double _min_theta, double _max_theta, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0) {};
   RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, _alpha, _r, _d) {};
   void SetTheta(double theta);
 };
 
-class Leg {
+// 
+template <int n_joints> class Leg {
 private:
+  RevoluteJoint joints[n_joints];
 
 public:
-  RevoluteJoint coxa, femur, tibia;
-  Leg(RevoluteJoint coxa, RevoluteJoint femur, RevoluteJoint tibia) : coxa(coxa), femur(femur), tibia(tibia) {};
+  Leg(RevoluteJoint _joints[n_joints]) {
+    for (int i = 0; i < n_joints; i++) {
+      joints[i] = _joints[i];
+    }
+  }
 
-  void SetState(double coxa_angle, double femur_angle, double tibia_angle);
+  void SetState(double angles[n_joints]) {
+    for (int i = 0; i < n_joints; i++) {
+      joints[i].SetTheta(angles[i]);
+    }
+  }
 
-  Eigen::Vector4d ToGlobal(Eigen::Vector4d in); 
+  Eigen::Vector4d ToGlobal(Eigen::Vector4d in) {
+    Eigen::Matrix<double, 4, 4> compound = joints[0].DHMat();
+    for (int i = 1; i < n_joints; i++) {
+      compound *= joints[i].DHMat();
+    }
+    return compound * in;
+  }
 
   // If you don't specify a point, it defaults to the origin.
   inline Eigen::Vector4d ToGlobal() {
@@ -66,8 +83,24 @@ public:
   }; 
 
   // Must have number of segments + 1 points
-  void AllSegments(Eigen::Vector4d points[4]);
+  void AllSegments(Eigen::Vector4d points[4]) {
+    Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
+    points[0] = origin;
+
+    Eigen::Matrix<double, 4, 4> compound = joints[0].DHMat();
+    for (int i = 1; i < n_joints; i++) {
+      points[i] = compound * origin;
+      compound *= joints[i].DHMat();
+    }
+    points[n_joints] = compound * origin;
+  }
 };
+
+/*
+class LegController {
+
+};
+*/
 
 
 /*
