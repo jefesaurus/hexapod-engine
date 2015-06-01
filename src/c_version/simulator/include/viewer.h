@@ -1,6 +1,8 @@
 #ifndef VIEWER_H_
 #define VIEWER_H_
 
-void StartWindow(void (*draw_func)());
+#include "drawing_primitives.h"
+
+void StartWindow(Drawable* scene_root);
 
 #endif // VIEWER_H_

@@ -42,7 +42,7 @@ void showTransferRate();
 void printTransferRate();
 
 // Callback that draws the main scene:
-void (*DrawScene)();
+Drawable* scene_root;
 
 
 // constants
@@ -71,8 +71,8 @@ float fps;
 float last_draw_time;
 
 ///////////////////////////////////////////////////////////////////////////////
-void StartWindow(void (*draw_func)()) {
-  DrawScene = draw_func;
+void StartWindow(Drawable* _scene_root) {
+  scene_root = _scene_root;
   initSharedMem();
 
   // register exit callback
@@ -212,7 +212,7 @@ void drawString3D(const char *str, float pos[3], float color[4], void *font) {
 // Draws 3D geometry using whatever OpenGL matrix is currently loaded.
 void DrawGeometry() {
   glLineWidth(5.0); 
-  glColor3f(1.0, 0.0, 0.0);
+  glColor3f(1.0, 0.0, 1.0);
   /*
 
   glBegin(GL_LINES);
@@ -224,8 +224,25 @@ void DrawGeometry() {
   glVertex3f(-1.0, 0.5, 0.5);
   glEnd();
   */
-  DrawScene();
+  scene_root->Draw();
 
+  glBegin(GL_LINES);
+
+  glColor3f(1.0, 0.0, 0.0);
+  glVertex3f(0.0, 0.0, 0.0);
+  glVertex3f(.2, 0.0, 0.0);
+
+  glColor3f(0.0, 1.0, 0.0);
+  glVertex3f(0.0, 0.0, 0.0);
+  glVertex3f(0.0, .2, 0.0);
+
+  glColor3f(0.0, 0.0, 1.0);
+  glVertex3f(0.0, 0.0, 0.0);
+  glVertex3f(0.0, 0.0, .2);
+  glEnd();
+
+  // Ground Plane
+  /*
   glColor3f(0.0, 0.0, 1.0);
   glBegin(GL_QUADS);
   glNormal3f(0, 0, 1);
@@ -234,6 +251,7 @@ void DrawGeometry() {
   glTexCoord2f(1.0f, 1.0f);   glVertex3f( 1.0f,  1.0f, 0.0f);
   glTexCoord2f(0.0f, 1.0f);   glVertex3f(-1.0f,  1.0f, 0.0f);
   glEnd();
+  */
 }
 
 
