@@ -1,23 +1,8 @@
 #include "ik_solver.h"
 
 
-/*
-inline double x_to_leg_coxa(double base_x, double base_y, double r_coxa, double theta_coxa) {
- return base_x*cos(theta_coxa) + base_y*sin(theta_coxa) - r_coxa*pow(sin(theta_coxa), 2) - r_coxa*pow(cos(theta_coxa), 2);
-}
-
-inline double y_to_leg_coxa(double alpha_coxa, double base_x, double base_y, double base_z, double d_coxa, double theta_coxa) {
- return base_z - d_coxa;
-}
-
-inline double z_to_leg_coxa(double alpha_coxa, double base_x, double base_y, double base_z, double d_coxa, double theta_coxa) {
- return base_x*sin(theta_coxa) - base_y*cos(theta_coxa);
-}
-*/
-
-// 0: Coxa
-// 1: Femur
-// 2: Tibia
+// 0: Coxa, 1: Femur, 2: Tibia
+// TODO: Get check feasibility more exactly, and check all possible solutions.
 int IK3DoF::Solve(double x, double y, double z, double angles[], int num_angles) {
   double coxa_angle = 0.0;
   // Start by angling directly to the point with the coxa

@@ -6,6 +6,8 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <cmath>
+#include <cassert>
+#include <cfloat>
 
 #include "drawing_primitives.h"
 
@@ -46,13 +48,22 @@ public:
 };
 
 class RevoluteJoint : public KinematicPair {
+  // Extremes
   double min_theta, max_theta;
+  double max_angular_velocity;
+
+  // Current command state
+  bool is_active;
+  double destination, velocity;
 
 public:
   RevoluteJoint() {};
-  RevoluteJoint(double _min_theta, double _max_theta, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0) {};
-  RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, _alpha, _r, _d) {};
+  RevoluteJoint(double _min_theta, double _max_theta, double _max_vel, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0), max_angular_velocity(_max_vel) {};
+  RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, DBL_MAX, _alpha, _r, _d) {};
+
   void SetTheta(double theta);
+  void SetCommand(double destination, double velocity);
+  void UpdateState(double time_elapsed);
 };
 
 #endif // KINEMATIC_PAIR_H

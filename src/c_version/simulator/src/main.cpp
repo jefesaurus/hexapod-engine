@@ -8,9 +8,9 @@
 
 
 // Test Leg config: Alpha, R, D
-RevoluteJoint coxa(M_PI/2.0, .5, 0);
-RevoluteJoint femur(0.0, 1.5, .8);
-RevoluteJoint tibia(0.0, 2.0, -.3);
+RevoluteJoint coxa(M_PI/2.0, .5, .5);
+RevoluteJoint femur(0.0, 1.5, -.2);
+RevoluteJoint tibia(0.0, 2.0, .2);
 RevoluteJoint joints[3] = {coxa, femur, tibia};
 Leg<3> front_right(joints);
 IK3DoF ik_3dof(coxa, femur, tibia);

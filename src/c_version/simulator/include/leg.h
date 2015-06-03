@@ -19,6 +19,7 @@ private:
   RevoluteJoint joints[n_joints];
 
 public:
+
   Leg(RevoluteJoint _joints[n_joints]) {
     for (int i = 0; i < n_joints; i++) {
       joints[i] = _joints[i];
@@ -28,6 +29,20 @@ public:
   void SetState(double angles[n_joints]) {
     for (int i = 0; i < n_joints; i++) {
       joints[i].SetTheta(angles[i]);
+    }
+  }
+
+  // Play the leg through in time toward its commanded destination.
+  void UpdateState(double time_elapsed) {
+    for (int i = 0; i < n_joints; i++) {
+      joints[i].UpdateState(time_elapsed);
+    }
+  }
+
+  // Propagate a set of commands to each of the joints.
+  void SetJointCommands(double angles[n_joints], double velocities[n_joints]) {
+    for (int i = 0; i < n_joints; i++) {
+      joints[i].SetCommand(angles[i], velocities[i]);
     }
   }
 
@@ -44,8 +59,8 @@ public:
     return ToGlobal(Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
   }; 
 
-  // Must have number of segments + 1 points
-  void AllSegments(Eigen::Vector4d points[n_joints + 1]) {
+  // Returns the origins of each of the segments in the global coordinate system
+  void AllOrigins(Eigen::Vector4d points[n_joints + 1]) {
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
     points[0] = origin;
 
@@ -57,6 +72,8 @@ public:
     points[n_joints] = compound * origin;
   }
 
+  // Returns the basic structure of each of the joints.
+  // SLightly More detailed version of AllOrigins.
   void AllJoints(Eigen::Vector4d points[2*n_joints]) {
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
     Eigen::Vector4d offset(0.0, 0.0, 0.0, 1.0);
@@ -73,10 +90,8 @@ public:
 
   // Implement the drawable interface.
   void Draw() {
-    //int strip_size = 1*n_joints + 1;
     int strip_size = 2*n_joints;
     Eigen::Vector4d segs[strip_size];
-    //AllSegments(segs);
     AllJoints(segs);
     LineStrip(strip_size, segs, 1.0, 0.0, 0.0);
   }
@@ -85,8 +100,14 @@ public:
 template <int n_joints> class LegController {
   Leg<n_joints> leg_model;
   IKSolver* ik_solver;
+  double goal_x, goal_y, goal_z;
+  double deadline, current_time;
 public:
   LegController(Leg<n_joints> model, IKSolver* ik_solver) : leg_model(model), ik_solver(ik_solver) {}; 
+
+  void SetCommand(double x, double y, double z, double deadline);
+  void GetJointCommands(double x, double y, double z, double joint_angles[n_joints], double joint_speeds[n_joints]);
+  void UpdateState(double time_elapsed);
 };
 
 #endif // LEG_H
