@@ -53,17 +53,21 @@ class RevoluteJoint : public KinematicPair {
   double max_angular_velocity;
 
   // Current command state
-  bool is_active;
+  bool is_active, is_moving;
   double destination, velocity;
 
 public:
   RevoluteJoint() {};
-  RevoluteJoint(double _min_theta, double _max_theta, double _max_vel, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0), max_angular_velocity(_max_vel) {};
+  RevoluteJoint(double _min_theta, double _max_theta, double _max_vel, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0), max_angular_velocity(_max_vel), is_active(true), is_moving(false) {};
   RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, DBL_MAX, _alpha, _r, _d) {};
 
   void SetTheta(double theta);
   void SetCommand(double destination, double velocity);
   void UpdateState(double time_elapsed);
+
+  inline bool IsMoving() const {
+    return is_moving && is_active;
+  };
 };
 
 #endif // KINEMATIC_PAIR_H

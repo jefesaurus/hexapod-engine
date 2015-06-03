@@ -22,21 +22,21 @@ void RevoluteJoint::SetTheta(double _theta) {
 void RevoluteJoint::SetCommand(double _dest, double _vel) {
   destination = _dest;
   velocity = _vel;
-  is_active = true;
+  is_moving = (destination != theta);
 }
 
 void RevoluteJoint::UpdateState(double time_elapsed) {
   if (is_active) {
     double diff = destination - theta;
-    if (diff != 0) {
+    if (fabs(diff) > 0.0) {
       double delta = std::copysign(velocity*time_elapsed, diff);
-      if (abs(delta) < abs(diff)) {
+      if (fabs(delta) < fabs(diff)) {
         SetTheta(theta + delta);
       } else {
         SetTheta(destination);
       }
     } else {
-      is_active = false;
+      is_moving = false;
     }
   }
 }

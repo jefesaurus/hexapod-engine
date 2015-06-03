@@ -4,8 +4,18 @@
 #include <GL/glut.h>
 #include <Eigen/Core>
 
+#include <pthread.h>
+
 class Drawable {
+  pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
   public:
+    inline void DrawLock() {
+      pthread_mutex_lock(&lock);
+    }
+    inline void DrawUnlock() {
+      pthread_mutex_unlock(&lock);
+    }
     virtual void Draw()=0;
 };
 

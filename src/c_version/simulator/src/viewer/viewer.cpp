@@ -401,7 +401,7 @@ void displayCB() {
   // transform camera
   glTranslatef(0, 0, -cam_distance);
   glRotatef(cam_angle_x, 1, 0, 0);   // pitch
-  glRotatef(cam_angle_y, 0, 1, 0);   // heading
+  glRotatef(cam_angle_y, 0, 0, 1);   // heading
   glTranslatef(-cam_pos_x, -cam_pos_y, 0);
 
   DrawGeometry();

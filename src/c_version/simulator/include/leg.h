@@ -21,22 +21,28 @@ private:
 public:
 
   Leg(RevoluteJoint _joints[n_joints]) {
+    DrawLock();
     for (int i = 0; i < n_joints; i++) {
       joints[i] = _joints[i];
     }
+    DrawUnlock();
   }
 
   void SetState(double angles[n_joints]) {
+    DrawLock();
     for (int i = 0; i < n_joints; i++) {
       joints[i].SetTheta(angles[i]);
     }
+    DrawUnlock();
   }
 
   // Play the leg through in time toward its commanded destination.
   void UpdateState(double time_elapsed) {
+    DrawLock();
     for (int i = 0; i < n_joints; i++) {
       joints[i].UpdateState(time_elapsed);
     }
+    DrawUnlock();
   }
 
   // Propagate a set of commands to each of the joints.
@@ -44,6 +50,15 @@ public:
     for (int i = 0; i < n_joints; i++) {
       joints[i].SetCommand(angles[i], velocities[i]);
     }
+  }
+
+  bool IsMoving() {
+    for (int i = 1; i < n_joints; i++) {
+      if (joints[i].IsMoving()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Eigen::Vector4d ToGlobal(Eigen::Vector4d in) {
@@ -61,24 +76,26 @@ public:
 
   // Returns the origins of each of the segments in the global coordinate system
   void AllOrigins(Eigen::Vector4d points[n_joints + 1]) {
+    DrawLock();
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
     points[0] = origin;
 
-    Eigen::Matrix<double, 4, 4> compound = joints[0].DHMat();
+    Eigen::Matrix4d compound(joints[0].DHMat());
     for (int i = 1; i < n_joints; i++) {
       points[i] = compound * origin;
       compound *= joints[i].DHMat();
     }
     points[n_joints] = compound * origin;
+    DrawUnlock();
   }
 
   // Returns the basic structure of each of the joints.
   // SLightly More detailed version of AllOrigins.
   void AllJoints(Eigen::Vector4d points[2*n_joints]) {
+    DrawLock();
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
     Eigen::Vector4d offset(0.0, 0.0, 0.0, 1.0);
-
-    Eigen::Matrix4d compound = Eigen::Matrix4d::Identity(4, 4);
+    Eigen::Matrix4d compound(Eigen::Matrix4d::Identity(4, 4));
 
     for (int i = 0; i < n_joints; i++) {
       compound *= joints[i].DHMat();
@@ -86,6 +103,7 @@ public:
       points[2*i] = compound * offset;
       points[2*i + 1] = compound * origin;
     }
+    DrawUnlock();
   }
 
   // Implement the drawable interface.
@@ -97,6 +115,7 @@ public:
   }
 };
 
+// Class to have more fine tuned control over the exact paths taken to a destination.
 template <int n_joints> class LegController {
   Leg<n_joints> leg_model;
   IKSolver* ik_solver;
