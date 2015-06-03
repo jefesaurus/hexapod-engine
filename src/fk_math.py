@@ -191,6 +191,31 @@ def generate_transformation_code(segments, label, dest_path, fixed_endpoint=None
   codegen(c_funcs, 'C', dest_path, label+'_fk', to_files=True)
 
 
+def generate_jacobian(segments):
+  trans_mat, _, var_names = get_sympy_reduction(segments, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), [], [])
+  vars = sp.symbols(var_names)
+  trans_mat.row_del(-1) # Get rid of the last row (which is just 1.0)
+  return trans_mat.jacobian(vars), var_names
+
+
+def generate_jacobian_code(segments, label, dest_path):
+  jacobian, var_names = generate_jacobian(segments)
+
+  c_funcs = []
+  # Row for X derivatives
+  for i in xrange(len(var_names)):
+    c_funcs.append(('dx_d' + var_names[i], jacobian[0, i]))
+
+  # Row for Y derivatives
+  for i in xrange(len(var_names)):
+    c_funcs.append(('dy_d' + var_names[i], jacobian[1, i]))
+
+  # Row for Z derivatives
+  for i in xrange(len(var_names)):
+    c_funcs.append(('dz_d' + var_names[i], jacobian[2, i]))
+
+  codegen(c_funcs, 'C', dest_path, label+'_jacobian', to_files=True)
+
 
 # Z-axis is the last axis of rotation
 # X-axis is the common normal between the last two axes of rotation(z-axes)
@@ -223,5 +248,36 @@ def test():
   print "Time for %d iterations: < %s seconds"%(count*2,str(time.time() - start))
   print "Largest error: " + str(max_wrong)
 
+def test_jacobian():
+  import kinematic_chain as kc
+  import time
+  seg1 = kc.RevoluteJoint('coxa', alpha=pi/2, r=0.5, d=0)
+  seg2 = kc.RevoluteJoint('femur', alpha=0, r=1.5, d=0)
+  seg3 = kc.RevoluteJoint('tibia', alpha=0, r=2, d=0)
+  segments = [seg1, seg2, seg3]
+
+  trans_mat, _, var_names = get_sympy_reduction(segments, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), [], [])
+  trans_mat.row_del(-1) # Get rid of the last row (which is just 1.0)
+  vars = sp.symbols(var_names)
+  vals = {vars[0]: pi/4, vars[1]: pi/5, vars[2]:0-pi/2}
+
+  # Get the jacobian of the cartesian position wrt. the angular positions of the joints.
+  jacobian = trans_mat.jacobian(vars)
+
+  # The analytic inverse takes a long time, so this isn't really worth it.
+  #analytic_inverse = jacobian.inv()
+  #an_eval = analytic_inverse.evalf(subs=vals)
+
+  # Get the numerical inverse
+  eval_jac = jacobian.evalf(subs=vals)
+  numerical_inverse = eval_jac.inv()
+
+
+  # Get the required joint velocities to achieve this desired end effector velocity
+  desired_velocity = sp.Matrix([0.0, 1.0, 0.0])
+  print numerical_inverse * desired_velocity
+
+
 if __name__ == '__main__':
   test()
+  #test_jacobian()

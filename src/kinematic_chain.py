@@ -54,6 +54,9 @@ class KinematicChain(object):
   def generate_transformation_code(self, label, dest_path):
     fk_math.generate_transformation_code(self.kinematic_pairs, label, dest_path, fixed_endpoint=(0,0,0), intermediate_points=True)
 
+  def generate_velocity_jacobian_code(self, label, dest_path):
+    fk_math.generate_jacobian_code(self.kinematic_pairs, label, dest_path)
+
 
 def test():
   coxa = RevoluteJoint('coxa', pi/2, 0.5, 0)
