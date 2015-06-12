@@ -65,6 +65,8 @@ public:
   void SetCommand(double destination, double velocity);
   void UpdateState(double time_elapsed);
 
+  inline double MaxAngularVelocity() const { return max_angular_velocity;};
+
   inline bool IsMoving() const {
     return is_moving && is_active;
   };

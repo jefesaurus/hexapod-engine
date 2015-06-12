@@ -15,7 +15,7 @@
 
 // Leg representation made up of only revolute joints.
 template <int n_joints> class Leg : public Drawable {
-private:
+protected:
   RevoluteJoint joints[n_joints];
 
 public:
@@ -36,6 +36,8 @@ public:
     DrawUnlock();
   }
 
+  inline const RevoluteJoint* Joint(int i) const { return &joints[i]; };
+
   // Play the leg through in time toward its commanded destination.
   void UpdateState(double time_elapsed) {
     DrawLock();
@@ -53,7 +55,7 @@ public:
   }
 
   bool IsMoving() {
-    for (int i = 1; i < n_joints; i++) {
+    for (int i = 0; i < n_joints; i++) {
       if (joints[i].IsMoving()) {
         return true;
       }
@@ -115,17 +117,20 @@ public:
   }
 };
 
-// Class to have more fine tuned control over the exact paths taken to a destination.
-template <int n_joints> class LegController {
-  Leg<n_joints> leg_model;
-  IKSolver* ik_solver;
-  double goal_x, goal_y, goal_z;
-  double deadline, current_time;
-public:
-  LegController(Leg<n_joints> model, IKSolver* ik_solver) : leg_model(model), ik_solver(ik_solver) {}; 
 
-  void SetCommand(double x, double y, double z, double deadline);
-  void GetJointCommands(double x, double y, double z, double joint_angles[n_joints], double joint_speeds[n_joints]);
+// Class to have more fine tuned control over the exact paths taken to a destination.
+template <int n_joints> class LegController : public Leg<n_joints> {
+protected:
+  IKSolver* ik_solver;
+  Eigen::Vector3d dest;
+  double deadline, current_time;
+
+public:
+  LegController(RevoluteJoint _joints[n_joints], IKSolver* ik_solver) : Leg<n_joints>(_joints), ik_solver(ik_solver) {}; 
+
+  void SetCommand(Eigen::Vector3d goal, double deadline);
+  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints]);
+  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
   void UpdateState(double time_elapsed);
 };
 

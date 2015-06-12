@@ -6,23 +6,36 @@
 #include "timer.h"
 
 #include <stdio.h>
+#include <cassert>
 
 
 // Test Leg config: Alpha, R, D
-RevoluteJoint coxa(M_PI/2.0, .5, .5);
-RevoluteJoint femur(0.0, 1.5, -.2);
-RevoluteJoint tibia(0.0, 2.0, .2);
-RevoluteJoint joints[3] = {coxa, femur, tibia};
-Leg<3> test_leg(joints);
-IK3DoF ik_3dof(coxa, femur, tibia);
-LegController<3> cont(test_leg, &ik_3dof);
-
-double RandFloat(double min, double max) {
-  double f = (double)rand() / RAND_MAX;
-  return min + f * (max - min);
+void GetTestJoints(RevoluteJoint* joints) {
+  joints[0] = RevoluteJoint(M_PI/2.0, .5, .5);
+  joints[1] = RevoluteJoint(0.0, 1.5, -.2);
+  joints[2] = RevoluteJoint(0.0, 2.0, .2);
 }
 
-void* AnimationLoop(void* args) {
+Leg<3> GetTestLeg() {
+  RevoluteJoint joints[3];
+  GetTestJoints(joints);
+  return Leg<3>(joints);
+}
+
+LegController<3> GetTestLegController() {
+  RevoluteJoint joints[3];
+  GetTestJoints(joints);
+
+  IKSolver* ik_3dof = new IK3DoF(joints[0], joints[1], joints[2]);
+  return LegController<3>(joints, ik_3dof);
+}
+
+
+struct ThreadArgs {
+  Leg<3> leg;
+};
+
+void* AnimationLoop(void* argptr) {
   double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
   double leg_state_b[3] = {M_PI/4.0, 0.0, -M_PI/4.0};
   double velocities_a[3] = {1.0, 1.0, 1.0};
@@ -32,19 +45,20 @@ void* AnimationLoop(void* args) {
   timer.start();
   double last_time = timer.getElapsedTimeInSec();
   double current_time = timer.getElapsedTimeInSec();
+  ThreadArgs* args = (ThreadArgs*) argptr;
   while (true) {
-    if (!test_leg.IsMoving()) {
+    if (!args->leg.IsMoving()) {
       if (state_a) {
-        test_leg.SetJointCommands(leg_state_b, velocities_b);
+        args->leg.SetJointCommands(leg_state_b, velocities_b);
         state_a = false;
       } else {
-        test_leg.SetJointCommands(leg_state_a, velocities_a);
+        args->leg.SetJointCommands(leg_state_a, velocities_a);
         state_a = true;
       }
     }
     
     current_time = timer.getElapsedTimeInSec();
-    test_leg.UpdateState(current_time - last_time);
+    args->leg.UpdateState(current_time - last_time);
     last_time = current_time;
 
     usleep(10000);
@@ -54,17 +68,80 @@ void* AnimationLoop(void* args) {
 
 
 void TestAnimation() {
+  // Get a test leg
+  ThreadArgs thread_args = {GetTestLeg()};
   double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
-  test_leg.SetState(leg_state_a);
+  thread_args.leg.SetState(leg_state_a);
+
+  // Create a thread to move the leg over time
   pthread_t movement;
-  pthread_create(&movement, NULL, AnimationLoop, (void*) NULL);
-  StartWindow(&test_leg);
+  pthread_create(&movement, NULL, AnimationLoop, (void*) &thread_args);
+
+  // Start a window to draw the leg as it moves.
+  StartWindow(&(thread_args.leg));
+  pthread_join(movement, NULL);
+}
+
+struct ThreadArgsIK {
+  LegController<3> cont;
+};
+
+void* AnimationLoopIK(void* argptr) {
+  Eigen::Vector3d point_a(2.5, 1.0, 0.0);
+  Eigen::Vector3d point_b(2.5, -1.0, 0.0);
+  double deadline_a = 1.0;
+  double deadline_b = 3.0;
+
+  bool state_a = false;
+  Timer timer;
+  timer.start();
+  double last_time = timer.getElapsedTimeInSec();
+  double current_time = timer.getElapsedTimeInSec();
+  ThreadArgsIK* args = (ThreadArgsIK*) argptr;
+  while (true) {
+    if (!args->cont.IsMoving()) {
+      if (state_a) {
+        args->cont.SetCommand(point_a, deadline_a);
+        state_a = false;
+      } else {
+        args->cont.SetCommand(point_b, deadline_b);
+        state_a = true;
+      }
+    }
+    
+    current_time = timer.getElapsedTimeInSec();
+    args->cont.UpdateState(current_time - last_time);
+    last_time = current_time;
+
+    usleep(10000);
+  }
+  return NULL;
+}
+
+
+void TestAnimationIK() {
+  // Get a test leg
+  ThreadArgsIK thread_args = {GetTestLegController()};
+  double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
+  thread_args.cont.SetState(leg_state_a);
+
+  // Create a thread to move the leg over time
+  pthread_t movement;
+  pthread_create(&movement, NULL, AnimationLoopIK, (void*) &thread_args);
+
+  // Start a window to draw the leg as it moves.
+  StartWindow(&(thread_args.cont));
   pthread_join(movement, NULL);
 }
 
 
+double RandFloat(double min, double max) {
+  double f = (double)rand() / RAND_MAX;
+  return min + f * (max - min);
+}
+
 void TestIK() {
-  double goal[3];
+  Eigen::Vector3d goal;
   double solution[3];
   Eigen::Vector4d end_effector;
   double range = 4.0;
@@ -75,12 +152,14 @@ void TestIK() {
   int test_iters = 1e7;
   int n_solved = 0;
 
+  LegController<3> test_leg = GetTestLegController();
+
   for (int i = 0; i < test_iters; i++) {
     goal[0] = RandFloat(-range, range);
     goal[1] = RandFloat(-range, range);
     goal[2] = RandFloat(-range, range);
 
-    int solved = ik_3dof.Solve(goal[0], goal[1], goal[2], solution, 3);
+    int solved = test_leg.GetJointCommands(goal, solution);
     if (solved == 0) {
       test_leg.SetState(solution);
       end_effector = test_leg.ToGlobal();
@@ -94,15 +173,17 @@ void TestIK() {
   printf("Biggest Error: %f, Percent Solved: %f\n", biggest_error, ((float)n_solved)/test_iters);
 }
 
-void GenericTest() {
+void StaticLegDrawTest() {
   double leg_state[3] = {0.0, M_PI/4.0, -M_PI/2.0};
+  Leg<3> test_leg = GetTestLeg();
   test_leg.SetState(leg_state);
   StartWindow(&test_leg);
 }
 
 int main() {
-  //GenericTest();
+  //StaticLegDrawTest();
   //TestIK();
-  TestAnimation();
+  //TestAnimation();
+  TestAnimationIK();
   return 0;
 }
