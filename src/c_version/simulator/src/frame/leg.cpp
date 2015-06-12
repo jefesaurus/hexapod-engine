@@ -6,8 +6,8 @@
 
 
 template<int n_joints> 
-void LegController<n_joints>::SetCommand(Eigen::Vector3d _goal, double _deadline) {
-  dest << _goal;
+void LegController<n_joints>::SetCommand(PathGen<Eigen::Vector3d>* _path, double _deadline) {
+  path = _path;
   deadline = _deadline;
   current_time = 0; // Reset time.
 }
@@ -49,27 +49,30 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
   double joint_angles[n_joints];
   double joint_speeds[n_joints];
 
-  /*
-  if (is_active && deadline > 0 && move_interpolator != NULL) {
+  if (deadline > 0 && path != NULL) {
     double progress = (current_time + time_elapsed)/deadline;
     // Finished
     if (progress > 1.0) {
       progress = 1.0;
       deadline = -1;
     }
-    double next_interpoint[3];
-    move_interpolator(progress, next_interpoint);
+    Eigen::Vector3d next_interpoint = path->Value(progress);
 
-    GetJointCommands(next_interpoint, joint_angles, joint_speeds);
-    SetJointCommands(joint_angles, joint_speeds);
+    int solved = this->GetJointCommands(next_interpoint, joint_angles, joint_speeds);
+    if (solved == 0) {
+      this->SetJointCommands(joint_angles, joint_speeds);
+    } else {
+      printf("Infeasible\n");
+    }
   }
-  */
 
+  /*
   int solved = this->GetJointCommands(dest, joint_angles, joint_speeds);
   if (solved != 0) {
     printf("Infeasible\n");
   }
   this->SetJointCommands(joint_angles, joint_speeds);
+  */
 }
 
 // Explicit instantiation to help out the confused compiler.

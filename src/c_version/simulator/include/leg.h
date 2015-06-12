@@ -10,6 +10,7 @@
 #include "kinematic_pair.h"
 #include "drawing_primitives.h"
 #include "ik_solver.h"
+#include "interpolators.h"
 
 
 
@@ -76,6 +77,10 @@ public:
     return ToGlobal(Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
   }; 
 
+  Eigen::Vector3d ToGlobal3() {
+    return ((Eigen::Vector4d)ToGlobal(Eigen::Vector4d(0.0, 0.0, 0.0, 1.0))).block<3,1>(0, 0);
+  }; 
+
   // Returns the origins of each of the segments in the global coordinate system
   void AllOrigins(Eigen::Vector4d points[n_joints + 1]) {
     DrawLock();
@@ -124,11 +129,12 @@ protected:
   IKSolver* ik_solver;
   Eigen::Vector3d dest;
   double deadline, current_time;
+  PathGen<Eigen::Vector3d>* path;
 
 public:
   LegController(RevoluteJoint _joints[n_joints], IKSolver* ik_solver) : Leg<n_joints>(_joints), ik_solver(ik_solver) {}; 
 
-  void SetCommand(Eigen::Vector3d goal, double deadline);
+  void SetCommand(PathGen<Eigen::Vector3d>* path, double deadline);
   int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints]);
   int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
   void UpdateState(double time_elapsed);

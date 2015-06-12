@@ -4,6 +4,7 @@
 #include "drawing_primitives.h"
 #include "ik_solver.h"
 #include "timer.h"
+#include "interpolators.h"
 
 #include <stdio.h>
 #include <cassert>
@@ -26,6 +27,8 @@ LegController<3> GetTestLegController() {
   RevoluteJoint joints[3];
   GetTestJoints(joints);
 
+  // TODO Don't leak memory here :p
+  // Use shared_ptr or whatever instead.
   IKSolver* ik_3dof = new IK3DoF(joints[0], joints[1], joints[2]);
   return LegController<3>(joints, ik_3dof);
 }
@@ -89,22 +92,31 @@ struct ThreadArgsIK {
 void* AnimationLoopIK(void* argptr) {
   Eigen::Vector3d point_a(2.5, 1.0, 0.0);
   Eigen::Vector3d point_b(2.5, -1.0, 0.0);
+  DragInterpolator path_a(point_b, point_a);
+  StepInterpolator path_b(point_a, point_b, .5);
+
   double deadline_a = 1.0;
   double deadline_b = 3.0;
 
-  bool state_a = false;
   Timer timer;
   timer.start();
   double last_time = timer.getElapsedTimeInSec();
   double current_time = timer.getElapsedTimeInSec();
   ThreadArgsIK* args = (ThreadArgsIK*) argptr;
+
+  // Set the initial command so that it moves to point_a.
+  Eigen::Vector3d starting_point = args->cont.ToGlobal3();
+  DragInterpolator path_to_start(starting_point, point_a);
+  args->cont.SetCommand(&path_to_start, deadline_a);
+  bool state_a = true;
+
   while (true) {
     if (!args->cont.IsMoving()) {
       if (state_a) {
-        args->cont.SetCommand(point_a, deadline_a);
+        args->cont.SetCommand(&path_b, deadline_b);
         state_a = false;
       } else {
-        args->cont.SetCommand(point_b, deadline_b);
+        args->cont.SetCommand(&path_a, deadline_a);
         state_a = true;
       }
     }
