@@ -92,8 +92,8 @@ struct ThreadArgsIK {
 void* AnimationLoopIK(void* argptr) {
   Eigen::Vector3d point_a(2.5, 1.0, 0.0);
   Eigen::Vector3d point_b(2.5, -1.0, 0.0);
-  DragInterpolator path_a(point_b, point_a);
-  StepInterpolator path_b(point_a, point_b, .5);
+  LinearPath path_a(point_b, point_a);
+  StepPath path_b(point_a, point_b, .5);
 
   double deadline_a = 1.0;
   double deadline_b = 3.0;
@@ -106,7 +106,7 @@ void* AnimationLoopIK(void* argptr) {
 
   // Set the initial command so that it moves to point_a.
   Eigen::Vector3d starting_point = args->cont.ToGlobal3();
-  DragInterpolator path_to_start(starting_point, point_a);
+  LinearPath path_to_start(starting_point, point_a);
   args->cont.SetCommand(&path_to_start, deadline_a);
   bool state_a = true;
 
@@ -192,10 +192,21 @@ void StaticLegDrawTest() {
   StartWindow(&test_leg);
 }
 
+void PathTest() {
+  Eigen::Vector3d point_a(2.5, 1.0, 0.0);
+  Eigen::Vector3d point_b(2.5, -1.0, 0.0);
+  LinearPath path_a(point_b, point_a);
+  int num = 10;
+  for (int i = 0; i < num; i++) {
+    printf("%f, %f\n", (float)i/num, path_a.Value((float)i/num)[1]);
+  }
+}
+
 int main() {
   //StaticLegDrawTest();
   //TestIK();
   //TestAnimation();
   TestAnimationIK();
+  //PathTest();
   return 0;
 }

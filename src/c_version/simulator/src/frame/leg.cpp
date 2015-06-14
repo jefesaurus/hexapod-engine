@@ -6,7 +6,7 @@
 
 
 template<int n_joints> 
-void LegController<n_joints>::SetCommand(PathGen<Eigen::Vector3d>* _path, double _deadline) {
+void LegController<n_joints>::SetCommand(PathGen* _path, double _deadline) {
   path = _path;
   deadline = _deadline;
   current_time = 0; // Reset time.
@@ -66,6 +66,8 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
     }
   }
 
+
+
   /*
   int solved = this->GetJointCommands(dest, joint_angles, joint_speeds);
   if (solved != 0) {
@@ -73,6 +75,12 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
   }
   this->SetJointCommands(joint_angles, joint_speeds);
   */
+}
+
+template<int n_joints> 
+void LegController<n_joints>::Draw() {
+  this->Leg<n_joints>::Draw();
+  // TODO Draw command point.
 }
 
 // Explicit instantiation to help out the confused compiler.
