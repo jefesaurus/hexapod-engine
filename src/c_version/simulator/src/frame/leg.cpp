@@ -13,7 +13,7 @@ void LegController<n_joints>::SetCommand(PathGen* _path, double _deadline) {
 }
 
 template<int n_joints> 
-int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints]) {
+int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints], double current_deadline) {
   int solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
   if (solved == 0) {
     double max_eta = fabs(this->joints[0].Theta() - joint_angles[0])/this->joints[0].MaxAngularVelocity();
@@ -21,8 +21,8 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double join
       max_eta = std::max(max_eta, fabs(this->joints[i].Theta() - joint_angles[i])/this->joints[i].MaxAngularVelocity());
     }
 
-    if (max_eta < deadline) {
-      max_eta = deadline - current_time;
+    if (max_eta < current_deadline) {
+      max_eta = current_deadline;
     }
 
     // TODO do something clever with the Velocity IK so it goes in a line.
@@ -58,15 +58,13 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
     }
     Eigen::Vector3d next_interpoint = path->Value(progress);
 
-    int solved = this->GetJointCommands(next_interpoint, joint_angles, joint_speeds);
+    int solved = this->GetJointCommands(next_interpoint, joint_angles, joint_speeds, time_elapsed);
     if (solved == 0) {
       this->SetJointCommands(joint_angles, joint_speeds);
     } else {
       printf("Infeasible\n");
     }
   }
-
-
 
   /*
   int solved = this->GetJointCommands(dest, joint_angles, joint_speeds);
@@ -77,10 +75,22 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
   */
 }
 
+static const int path_draw_points = 100;
 template<int n_joints> 
 void LegController<n_joints>::Draw() {
   this->Leg<n_joints>::Draw();
-  // TODO Draw command point.
+
+
+  // Draw the commanded path.
+  Eigen::Vector3d path_segs[path_draw_points];
+  if (deadline > 0 && path != NULL) {
+    for (int i = 0; i < path_draw_points; i++) {
+      double progress = (float)i/(path_draw_points - 1);
+      path_segs[i] = path->Value(progress);
+    }
+    LineStrip(path_draw_points, path_segs, 0.0, 1.0, 0.0);
+  }
+  Point(path->Value((float)(current_time)/deadline), 0.0, 0.0, 1.0);
 }
 
 // Explicit instantiation to help out the confused compiler.

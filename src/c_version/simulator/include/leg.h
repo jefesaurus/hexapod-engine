@@ -135,7 +135,7 @@ public:
   LegController(RevoluteJoint _joints[n_joints], IKSolver* ik_solver) : Leg<n_joints>(_joints), ik_solver(ik_solver) {}; 
 
   void SetCommand(PathGen* path, double deadline);
-  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints]);
+  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints], double current_deadline);
   int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
   void UpdateState(double time_elapsed);
 
