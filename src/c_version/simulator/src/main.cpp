@@ -93,10 +93,10 @@ void* AnimationLoopIK(void* argptr) {
   Eigen::Vector3d point_a(2.5, 1.0, 0.0);
   Eigen::Vector3d point_b(2.5, -1.0, 0.0);
   LinearPath path_a(point_b, point_a);
-  StepPath path_b(point_a, point_b, .5);
+  StepPath path_b(point_a, point_b, 1.0);
 
   double deadline_a = 1.0;
-  double deadline_b = 3.0;
+  double deadline_b = 1.0;
 
   Timer timer;
   timer.start();

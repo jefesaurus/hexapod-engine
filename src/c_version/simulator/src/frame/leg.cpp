@@ -57,6 +57,7 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
       deadline = -1;
     }
     Eigen::Vector3d next_interpoint = path->Value(progress);
+    //printf("%f, %f, %f\n", next_interpoint[0], next_interpoint[1], next_interpoint[2]);
 
     int solved = this->GetJointCommands(next_interpoint, joint_angles, joint_speeds, time_elapsed);
     if (solved == 0) {
@@ -65,14 +66,6 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
       printf("Infeasible\n");
     }
   }
-
-  /*
-  int solved = this->GetJointCommands(dest, joint_angles, joint_speeds);
-  if (solved != 0) {
-    printf("Infeasible\n");
-  }
-  this->SetJointCommands(joint_angles, joint_speeds);
-  */
 }
 
 static const int path_draw_points = 100;

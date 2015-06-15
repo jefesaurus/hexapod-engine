@@ -38,7 +38,7 @@ public:
   CubicBezierPath() {};
   CubicBezierPath(Eigen::Vector3d p0, Eigen::Vector3d p1, Eigen::Vector3d p2, Eigen::Vector3d p3) : p0(p0), p1(p1), p2(p2), p3(p3) {};
   Eigen::Vector3d Value(double progress) {
-    return pow((1 - progress), 3)*p0 + pow((1 - progress), 2)*progress*p1 + (1 - progress)*pow(progress, 2)*p2 + pow(progress, 3)*p3;
+    return pow((1 - progress), 3)*p0 + 3*pow((1 - progress), 2)*progress*p1 + 3*(1 - progress)*pow(progress, 2)*p2 + pow(progress, 3)*p3;
   }
 
   void SetPoints(Eigen::Vector3d _p0, Eigen::Vector3d _p1, Eigen::Vector3d _p2, Eigen::Vector3d _p3) {
