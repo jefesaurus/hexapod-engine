@@ -73,17 +73,20 @@ template<int n_joints>
 void LegController<n_joints>::Draw() {
   this->Leg<n_joints>::Draw();
 
-
-  // Draw the commanded path.
+  // Draw the commanded path, if there is a commanded path.
   Eigen::Vector3d path_segs[path_draw_points];
   if (deadline > 0 && path != NULL) {
+    double progress;
     for (int i = 0; i < path_draw_points; i++) {
-      double progress = (float)i/(path_draw_points - 1);
+      progress = (float)i/(path_draw_points - 1);
       path_segs[i] = path->Value(progress);
     }
     LineStrip(path_draw_points, path_segs, 0.0, 1.0, 0.0);
+
+    // Draw the point in time along the path where the leg should aim for
+    progress = (float)(current_time)/deadline;
+    Point(path->Value(progress), 0.0, 0.0, 1.0);
   }
-  Point(path->Value((float)(current_time)/deadline), 0.0, 0.0, 1.0);
 }
 
 // Explicit instantiation to help out the confused compiler.
