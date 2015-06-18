@@ -19,9 +19,9 @@ void RevoluteJoint::SetTheta(double _theta) {
   theta = _theta;
 }
 
-void RevoluteJoint::SetCommand(double _dest, double _vel) {
-  destination = _dest;
-  velocity = _vel;
+void RevoluteJoint::SetCommand(RevoluteJointCommand command) {
+  destination = command.angle;
+  velocity = command.velocity;
   is_moving = (destination != theta);
 }
 

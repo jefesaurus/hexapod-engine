@@ -14,7 +14,19 @@
 
 
 
+template <int n_joints> struct LegCommand {
+  RevoluteJointCommand joint_commands[n_joints];
+
+  LegCommand() {};
+  LegCommand(RevoluteJointCommand _joint_commands[n_joints]) {
+    for (int i = 0; i < n_joints; i++) {
+      joint_commands[i] = _joint_commands[i];
+    }
+  };
+};
+
 // Leg representation made up of only revolute joints.
+// The "mechanical" representation, taking only joint angles and speeds as input.
 template <int n_joints> class Leg : public Drawable {
 protected:
   RevoluteJoint joints[n_joints];
@@ -49,9 +61,9 @@ public:
   }
 
   // Propagate a set of commands to each of the joints.
-  void SetJointCommands(double angles[n_joints], double velocities[n_joints]) {
+  void SetCommand(LegCommand<n_joints> command) {
     for (int i = 0; i < n_joints; i++) {
-      joints[i].SetCommand(angles[i], velocities[i]);
+      joints[i].SetCommand(command.joint_commands[i]);
     }
   }
 
@@ -134,8 +146,8 @@ protected:
 public:
   LegController(RevoluteJoint _joints[n_joints], IKSolver* ik_solver) : Leg<n_joints>(_joints), ik_solver(ik_solver) {}; 
 
-  void SetCommand(PathGen* path, double deadline);
-  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints], double current_deadline);
+  void SetControl(PathGen* path, double deadline);
+  int GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command_to_set);
   int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
   void UpdateState(double time_elapsed);
 

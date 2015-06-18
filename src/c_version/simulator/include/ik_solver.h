@@ -5,6 +5,7 @@
 
 class IKSolver {
 public:
+  // Returns 0 if solved, 1 if couldn't find a solution.
   virtual int Solve(double x, double y, double z, double angles[], int num_angles)=0;
 };
 

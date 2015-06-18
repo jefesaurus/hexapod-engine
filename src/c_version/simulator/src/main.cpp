@@ -39,10 +39,17 @@ struct ThreadArgs {
 };
 
 void* AnimationLoop(void* argptr) {
-  double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
-  double leg_state_b[3] = {M_PI/4.0, 0.0, -M_PI/4.0};
-  double velocities_a[3] = {1.0, 1.0, 1.0};
-  double velocities_b[3] = {0.5, .5, .5};
+  RevoluteJointCommand coxa_a(0.0, 1.0);
+  RevoluteJointCommand femur_a(M_PI/4.0, 1.0);
+  RevoluteJointCommand tibia_a(-M_PI/2.0, 1.0);
+  RevoluteJointCommand coxa_b(M_PI/4.0, .5);
+  RevoluteJointCommand femur_b(0.0, 0.5);
+  RevoluteJointCommand tibia_b(-M_PI/4.0, 0.5);
+  RevoluteJointCommand joints_a[3] = {coxa_a, femur_a, tibia_a};
+  RevoluteJointCommand joints_b[3] = {coxa_b, femur_b, tibia_b};
+  LegCommand<3> command_a(joints_a);
+  LegCommand<3> command_b(joints_b);
+
   bool state_a = true;
   Timer timer;
   timer.start();
@@ -52,10 +59,10 @@ void* AnimationLoop(void* argptr) {
   while (true) {
     if (!args->leg.IsMoving()) {
       if (state_a) {
-        args->leg.SetJointCommands(leg_state_b, velocities_b);
+        args->leg.SetCommand(command_b);
         state_a = false;
       } else {
-        args->leg.SetJointCommands(leg_state_a, velocities_a);
+        args->leg.SetCommand(command_a);
         state_a = true;
       }
     }
@@ -94,7 +101,7 @@ void* AnimationLoopIK(void* argptr) {
   Eigen::Vector3d point_b(2.5, -1.0, 0.0);
   LinearPath path_a(point_b, point_a);
   // One curved bezier path of height 1.0
-  StepPath path_b(point_a, point_b, 1.0);
+  StepPath path_b(point_a, point_b, 2.0);
 
   double deadline_a = 1.0;
   double deadline_b = 1.0;
@@ -108,16 +115,16 @@ void* AnimationLoopIK(void* argptr) {
   // Set the initial command so that it moves to point_a.
   Eigen::Vector3d starting_point = args->cont.ToGlobal3();
   LinearPath path_to_start(starting_point, point_a);
-  args->cont.SetCommand(&path_to_start, deadline_a);
+  args->cont.SetControl(&path_to_start, deadline_a);
   bool state_a = true;
 
   while (true) {
     if (!args->cont.IsMoving()) {
       if (state_a) {
-        args->cont.SetCommand(&path_b, deadline_b);
+        args->cont.SetControl(&path_b, deadline_b);
         state_a = false;
       } else {
-        args->cont.SetCommand(&path_a, deadline_a);
+        args->cont.SetControl(&path_a, deadline_a);
         state_a = true;
       }
     }

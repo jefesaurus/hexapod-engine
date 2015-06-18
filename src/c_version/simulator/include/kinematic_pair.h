@@ -38,13 +38,19 @@ public:
     }
     return dh_mat;
   };
-  inline const Eigen::Matrix<double, 4, 4>& InvDHMat() {
+  inline const Eigen::Matrix4d& InvDHMat() {
     if (params_changed) {
       GenerateDHMatrices();
       params_changed = false;
     }
     return inv_dh_mat;
   };
+};
+
+struct RevoluteJointCommand {
+  double angle, velocity;
+  RevoluteJointCommand() {};
+  RevoluteJointCommand(double angle, double velocity) : angle(angle), velocity(velocity) {};
 };
 
 class RevoluteJoint : public KinematicPair {
@@ -62,7 +68,7 @@ public:
   RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, DBL_MAX, _alpha, _r, _d) {};
 
   void SetTheta(double theta);
-  void SetCommand(double destination, double velocity);
+  void SetCommand(RevoluteJointCommand command);
   void UpdateState(double time_elapsed);
 
   inline double MaxAngularVelocity() const { return max_angular_velocity;};

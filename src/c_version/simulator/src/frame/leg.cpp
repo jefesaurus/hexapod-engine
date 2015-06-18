@@ -6,15 +6,17 @@
 
 
 template<int n_joints> 
-void LegController<n_joints>::SetCommand(PathGen* _path, double _deadline) {
+void LegController<n_joints>::SetControl(PathGen* _path, double _deadline) {
   path = _path;
   deadline = _deadline;
   current_time = 0; // Reset time.
 }
 
 template<int n_joints> 
-int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints], double joint_speeds[n_joints], double current_deadline) {
+int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command) {
+  double joint_angles[n_joints];
   int solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
+
   if (solved == 0) {
     double max_eta = fabs(this->joints[0].Theta() - joint_angles[0])/this->joints[0].MaxAngularVelocity();
     for (int i = 1; i < n_joints; i++) {
@@ -27,7 +29,8 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double join
 
     // TODO do something clever with the Velocity IK so it goes in a line.
     for (int i = 0; i < n_joints; i++) {
-      joint_speeds[i] = fabs(this->joints[i].Theta() - joint_angles[i]) / max_eta;
+      command->joint_commands[i].angle = joint_angles[i];
+      command->joint_commands[i].velocity =fabs(this->joints[i].Theta() - joint_angles[i]) / max_eta;
     }
   }
   return solved;
@@ -46,8 +49,7 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
   this->Leg<n_joints>::UpdateState(time_elapsed);
   current_time += time_elapsed;
 
-  double joint_angles[n_joints];
-  double joint_speeds[n_joints];
+  LegCommand<n_joints> command;
 
   if (deadline > 0 && path != NULL) {
     double progress = (current_time + time_elapsed)/deadline;
@@ -59,9 +61,9 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
     Eigen::Vector3d next_interpoint = path->Value(progress);
     //printf("%f, %f, %f\n", next_interpoint[0], next_interpoint[1], next_interpoint[2]);
 
-    int solved = this->GetJointCommands(next_interpoint, joint_angles, joint_speeds, time_elapsed);
+    int solved = this->GetJointCommands(next_interpoint, time_elapsed, &command);
     if (solved == 0) {
-      this->SetJointCommands(joint_angles, joint_speeds);
+      this->SetCommand(command);
     } else {
       printf("Infeasible\n");
     }
