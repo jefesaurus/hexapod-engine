@@ -77,7 +77,7 @@ public:
   }
 
   Eigen::Vector4d ToGlobal(Eigen::Vector4d in) {
-    Eigen::Matrix<double, 4, 4> compound = joints[0].DHMat();
+    Eigen::Matrix4d compound = joints[0].DHMat();
     for (int i = 1; i < n_joints; i++) {
       compound *= joints[i].DHMat();
     }
@@ -126,10 +126,16 @@ public:
   }
 
   // Implement the drawable interface.
-  void Draw() {
+  // 
+  void Draw(Eigen::Matrix4d to_global) {
     int strip_size = 2*n_joints;
     Eigen::Vector4d segs[strip_size];
     AllJoints(segs);
+
+    // Transform the points into the global frame using the provided matrix.
+    for (int i = 0; i < strip_size; i++) {
+      segs[i] = to_global * segs[i];
+    }
     LineStrip(strip_size, segs, 1.0, 0.0, 0.0);
   }
 };
@@ -152,7 +158,7 @@ public:
   void UpdateState(double time_elapsed);
 
   // Override the Leg's draw method
-  void Draw();
+  void Draw(Eigen::Matrix4d to_global);
 };
 
 #endif // LEG_H

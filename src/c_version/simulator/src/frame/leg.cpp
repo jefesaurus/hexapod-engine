@@ -72,22 +72,27 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
 
 static const int path_draw_points = 100;
 template<int n_joints> 
-void LegController<n_joints>::Draw() {
-  this->Leg<n_joints>::Draw();
+void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
+  this->Leg<n_joints>::Draw(to_global);
 
   // Draw the commanded path, if there is a commanded path.
-  Eigen::Vector3d path_segs[path_draw_points];
+  Eigen::Vector4d path_segs[path_draw_points];
+  Eigen::Vector4d local_point;
   if (deadline > 0 && path != NULL) {
     double progress;
     for (int i = 0; i < path_draw_points; i++) {
       progress = (float)i/(path_draw_points - 1);
-      path_segs[i] = path->Value(progress);
+      local_point << path->Value(progress), 1;
+      path_segs[i] = to_global * local_point;
     }
+
     LineStrip(path_draw_points, path_segs, 0.0, 1.0, 0.0);
 
     // Draw the point in time along the path where the leg should aim for
     progress = (float)(current_time)/deadline;
-    Point(path->Value(progress), 0.0, 0.0, 1.0);
+    local_point << path->Value(progress), 1;
+    Eigen::Vector4d global_point = to_global * local_point;
+    Point(global_point, 0.0, 0.0, 1.0);
   }
 }
 

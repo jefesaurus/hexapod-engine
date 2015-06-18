@@ -34,14 +34,17 @@ protected:
     return leg_poses[leg_index].ToFrame(local.ToFrame(in));
   }
 
-  // Commands are in Leg-major order. (joints in the same leg are adjacent)
   void SetCommand(LegCommand<n_joints> leg_commands) {
     for (int i = 0; i < n_legs; i++) {
       legs[i].SetCommand(leg_commands[i]);
     }
   }
-  void UpdateState(double time_elapsed);
 
+  void UpdateState(double time_elapsed) {
+    for (int i = 0; i < n_legs; i++) {
+      legs[i].UpdateState(time_elapsed);
+    }
+  }
 };
 
 #endif // CHASSIS_H_

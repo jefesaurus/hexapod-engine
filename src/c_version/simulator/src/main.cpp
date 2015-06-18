@@ -121,6 +121,7 @@ void* AnimationLoopIK(void* argptr) {
   while (true) {
     if (!args->cont.IsMoving()) {
       if (state_a) {
+        printf("Switched\n");
         args->cont.SetControl(&path_b, deadline_b);
         state_a = false;
       } else {
@@ -142,6 +143,7 @@ void* AnimationLoopIK(void* argptr) {
 void TestAnimationIK() {
   // Get a test leg
   ThreadArgsIK thread_args = {GetTestLegController()};
+
   double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
   thread_args.cont.SetState(leg_state_a);
 

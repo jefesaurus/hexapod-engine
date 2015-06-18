@@ -28,6 +28,14 @@ void Point(Eigen::Vector3d point, double r, double g, double b) {
   glEnd();
 }
 
+void Point(Eigen::Vector4d point, double r, double g, double b) {
+  glColor3f((float)r, (float)g, (float)b);
+  glPointSize(10);
+  glBegin(GL_POINTS);
+  glVertex3f(point[0], point[1], point[2]);
+  glEnd();
+}
+
 
 /*
 void LineLoop(int n_segs, Eigen::Vector4d segs[], double r, double g, double b) {
