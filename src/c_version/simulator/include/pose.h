@@ -10,9 +10,10 @@ class Pose {
   Eigen::Matrix4d to_frame;
 
 public:
-  const double x, y, z;
-  const double yaw, pitch, roll;
+  double x, y, z;
+  double yaw, pitch, roll;
 
+  Pose() {};
   Pose(double x, double y, double z, double yaw, double pitch, double roll) : x(x), y(y), z(z), yaw(yaw), pitch(pitch), roll(roll) {
     const double cy = cos(yaw);
     const double sy = sin(yaw);

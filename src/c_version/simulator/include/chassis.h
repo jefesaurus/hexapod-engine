@@ -12,15 +12,24 @@
 #include "interpolators.h"
 #include "pose.h"
 
-
-
-template <int n_legs, int n_joints> class Chassis : public Drawable {
+template <int n_legs, int n_joints>
+class Chassis : public Drawable {
 protected:
   Leg<n_joints> legs[n_legs];
   Pose leg_poses[n_legs];
   Pose local;
 
-  Chassis(Leg<n_joints> legs, Pose leg_poses) : legs(legs), leg_poses(leg_poses), local(0, 0, 0, 0, 0, 0) {};
+public:
+  Chassis(Leg<n_joints> _legs[n_legs], Pose _leg_poses[n_legs]) : local(0, 0, 0, 0, 0, 0) {
+    for (int i = 0; i < n_legs; i++) {
+      legs[i] = _legs[i];
+      leg_poses[i] = _leg_poses[i];
+    }
+  }
+
+  inline void SetState(int leg_index, double angles[n_joints]) {
+    legs[leg_index].SetState(angles);
+  }
 
   inline Eigen::Vector4d LocalToGlobal(Eigen::Vector4d in) const {
     return local.FromFrame(in);
@@ -45,6 +54,31 @@ protected:
       legs[i].UpdateState(time_elapsed);
     }
   }
+
+  void Draw(Eigen::Matrix4d to_global) {
+    to_global *= local.FromFrameMat();
+    Eigen::Matrix4d leg_to_global;
+    for (int i = 0; i < n_legs; i++) {
+      leg_to_global = to_global * leg_poses[i].FromFrameMat();
+      legs[i].Draw(leg_to_global);
+    }
+  }
+};
+
+
+template <int n_legs, int n_joints>
+class ChassisController {
+  // The simulated model
+  Chassis<n_legs, n_joints> model;
+
+  // Individual leg controllers.
+  LegController<n_joints> leg_controllers[n_legs];
+public:
+  ChassisController(Leg<n_joints> legs[n_legs], Pose leg_poses[n_legs], std::unique_ptr<IKSolver> solvers[n_legs]) : model(legs, leg_poses) {
+    for (int i = 0; i < n_legs; i++) {
+      leg_controllers[i](legs[i], std::move(solvers[i])); 
+    }
+  };
 };
 
 #endif // CHASSIS_H_

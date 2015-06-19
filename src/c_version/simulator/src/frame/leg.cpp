@@ -3,7 +3,12 @@
 #include <stdio.h>
 
 #include "leg.h"
+#include "utils.h"
 
+template<int n_joints> 
+void LegController<n_joints>::SetState(double angles[n_joints]) {
+  model->SetState(angles);
+}
 
 template<int n_joints> 
 void LegController<n_joints>::SetControl(PathGen* _path, double _deadline) {
@@ -18,9 +23,9 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double curr
   int solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
 
   if (solved == 0) {
-    double max_eta = fabs(this->joints[0].Theta() - joint_angles[0])/this->joints[0].MaxAngularVelocity();
+    double max_eta = fabs(model->joints[0].Theta() - joint_angles[0])/model->joints[0].MaxAngularVelocity();
     for (int i = 1; i < n_joints; i++) {
-      max_eta = std::max(max_eta, fabs(this->joints[i].Theta() - joint_angles[i])/this->joints[i].MaxAngularVelocity());
+      max_eta = std::max(max_eta, fabs(model->joints[i].Theta() - joint_angles[i])/model->joints[i].MaxAngularVelocity());
     }
 
     if (max_eta < current_deadline) {
@@ -30,7 +35,7 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double curr
     // TODO do something clever with the Velocity IK so it goes in a line.
     for (int i = 0; i < n_joints; i++) {
       command->joint_commands[i].angle = joint_angles[i];
-      command->joint_commands[i].velocity =fabs(this->joints[i].Theta() - joint_angles[i]) / max_eta;
+      command->joint_commands[i].velocity =fabs(model->joints[i].Theta() - joint_angles[i]) / max_eta;
     }
   }
   return solved;
@@ -46,7 +51,7 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double join
 template<int n_joints> 
 void LegController<n_joints>::UpdateState(double time_elapsed) {
   // Update the state of the simulation
-  this->Leg<n_joints>::UpdateState(time_elapsed);
+  model->UpdateState(time_elapsed);
   current_time += time_elapsed;
 
   LegCommand<n_joints> command;
@@ -63,20 +68,29 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
 
     int solved = this->GetJointCommands(next_interpoint, time_elapsed, &command);
     if (solved == 0) {
-      this->SetCommand(command);
+      model->SetCommand(command);
     } else {
       printf("Infeasible\n");
     }
   }
 }
 
+template<int n_joints> 
+Eigen::Vector3d LegController<n_joints>::GetEndpoint() {
+  return Vector4dTo3d(model->ToGlobal());
+}
+
 static const int path_draw_points = 100;
 template<int n_joints> 
 void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
-  this->Leg<n_joints>::Draw(to_global);
+  // Draw the simulated leg model.
+  model->Draw(to_global);
 
   // Draw the commanded path, if there is a commanded path.
   Eigen::Vector4d path_segs[path_draw_points];
+  double r[path_draw_points];
+  double g[path_draw_points];
+  double b[path_draw_points];
   Eigen::Vector4d local_point;
   if (deadline > 0 && path != NULL) {
     double progress;
@@ -84,15 +98,16 @@ void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
       progress = (float)i/(path_draw_points - 1);
       local_point << path->Value(progress), 1;
       path_segs[i] = to_global * local_point;
+      GetHeatMapColor(progress, &r[i], &g[i], &b[i]);
     }
 
-    LineStrip(path_draw_points, path_segs, 0.0, 1.0, 0.0);
+    LineStrip(path_draw_points, path_segs, r, g, b);
 
     // Draw the point in time along the path where the leg should aim for
     progress = (float)(current_time)/deadline;
     local_point << path->Value(progress), 1;
     Eigen::Vector4d global_point = to_global * local_point;
-    Point(global_point, 0.0, 0.0, 1.0);
+    Point(global_point, 0.0, 1.0, 0.0);
   }
 }
 

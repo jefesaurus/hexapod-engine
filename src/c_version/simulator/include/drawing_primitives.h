@@ -38,7 +38,9 @@ public:
   };
 };
 
+void GetHeatMapColor(double value, double *red, double *green, double *blue);
 void LineStrip(int n_segs, Eigen::Vector4d segs[], double r, double g, double b);
+void LineStrip(int n_segs, Eigen::Vector4d segs[], double r[], double g[], double b[]);
 void LineStrip(int n_segs, Eigen::Vector3d segs[], double r, double g, double b);
 void Point(Eigen::Vector4d point, double r, double g, double b);
 void Point(Eigen::Vector3d point, double r, double g, double b);
