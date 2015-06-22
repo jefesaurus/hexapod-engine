@@ -35,7 +35,7 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double curr
     // TODO do something clever with the Velocity IK so it goes in a line.
     for (int i = 0; i < n_joints; i++) {
       command->joint_commands[i].angle = joint_angles[i];
-      command->joint_commands[i].velocity =fabs(model->joints[i].Theta() - joint_angles[i]) / max_eta;
+      command->joint_commands[i].velocity = fabs(model->joints[i].Theta() - joint_angles[i]) / max_eta;
     }
   }
   return solved;
@@ -49,13 +49,11 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double join
 }
 
 template<int n_joints> 
-void LegController<n_joints>::UpdateState(double time_elapsed) {
+void LegController<n_joints>::UpdateState(double time_elapsed, LegCommand<n_joints>* out_command) {
   // Update the state of the simulation
-  model->UpdateState(time_elapsed);
   current_time += time_elapsed;
 
   LegCommand<n_joints> command;
-
   if (deadline > 0 && path != NULL) {
     double progress = (current_time + time_elapsed)/deadline;
     // Finished
@@ -66,11 +64,15 @@ void LegController<n_joints>::UpdateState(double time_elapsed) {
     Eigen::Vector3d next_interpoint = path->Value(progress);
     //printf("%f, %f, %f\n", next_interpoint[0], next_interpoint[1], next_interpoint[2]);
 
-    int solved = this->GetJointCommands(next_interpoint, time_elapsed, &command);
+    int solved = GetJointCommands(next_interpoint, time_elapsed, &command);
     if (solved == 0) {
-      model->SetCommand(command);
+      *out_command = command;
     } else {
       printf("Infeasible\n");
+      // Set the command to the current state so the leg freezes.
+      for (int i = 0; i < n_joints; i++) {
+        out_command->joint_commands[i].angle = model->joints[i].Theta();
+      }
     }
   }
 }

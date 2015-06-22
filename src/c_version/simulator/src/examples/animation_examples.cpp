@@ -75,6 +75,7 @@ void TestAnimation() {
 // An example of animation using a IK controlled test leg.
 /********************************************************/
 struct ThreadArgsIK {
+  Leg<3> leg;
   LegController<3> cont;
 };
 
@@ -100,6 +101,7 @@ void* AnimationLoopIK(void* argptr) {
   args->cont.SetControl(&path_to_start, deadline_a);
   bool state_a = true;
 
+  LegCommand<3> command;
   while (true) {
     if (!args->cont.IsMoving()) {
       if (state_a) {
@@ -112,7 +114,9 @@ void* AnimationLoopIK(void* argptr) {
     }
     
     current_time = timer.getElapsedTimeInSec();
-    args->cont.UpdateState(current_time - last_time);
+    args->leg.UpdateState(current_time - last_time);
+    args->cont.UpdateState(current_time - last_time, &command);
+    args->leg.SetCommand(command);
     last_time = current_time;
 
     usleep(10000);
@@ -123,8 +127,10 @@ void* AnimationLoopIK(void* argptr) {
 void TestAnimationIK() {
   // Get a test leg
   Leg<3> test_leg = GetTestLeg();
-  ThreadArgsIK thread_args = {GetTestLegController(&test_leg)};
-
+  ThreadArgsIK thread_args;
+  thread_args.leg = test_leg;
+  thread_args.cont = GetTestLegController(&thread_args.leg);
+  
   double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
   thread_args.cont.SetState(leg_state_a);
 

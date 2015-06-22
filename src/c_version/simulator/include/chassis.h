@@ -75,10 +75,22 @@ class ChassisController {
   LegController<n_joints> leg_controllers[n_legs];
 public:
   ChassisController(Leg<n_joints> legs[n_legs], Pose leg_poses[n_legs], std::unique_ptr<IKSolver> solvers[n_legs]) : model(legs, leg_poses) {
+    // Create the controllers, giving them references to the internal simulation model and the provided solvers.
     for (int i = 0; i < n_legs; i++) {
       leg_controllers[i](legs[i], std::move(solvers[i])); 
     }
-  };
+  }
+
+  void UpdateState(double time_elapsed) {
+    model.UpdateState(time_elapsed);
+
+    LegCommand<n_joints> leg_commands;
+    for (int i = 0; i < n_legs; i++) {
+      leg_controllers[i].UpdateState(time_elapsed, &leg_commands[i]);
+    }
+
+    model.SetCommand(leg_commands);
+  }
 };
 
 #endif // CHASSIS_H_

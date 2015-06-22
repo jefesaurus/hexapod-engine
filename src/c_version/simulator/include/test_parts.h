@@ -11,7 +11,7 @@
 // Test Leg config: Alpha, R, D
 
 inline static void GetTestJoints(RevoluteJoint* joints, bool right) {
-  joints[0] = RevoluteJoint(M_PI/2.0, .5, .5);
+  joints[0] = RevoluteJoint(M_PI/2.0, .5, 0);
   if (right) {
     joints[1] = RevoluteJoint(0.0, 1.5, -.2);
     joints[2] = RevoluteJoint(0.0, 2.0, .2);

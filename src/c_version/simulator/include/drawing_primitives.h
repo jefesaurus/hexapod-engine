@@ -7,6 +7,7 @@
 #include <pthread.h>
 
 #include "pose.h"
+#include "utils.h"
 
 class Drawable {
   pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -42,8 +43,22 @@ void GetHeatMapColor(double value, double *red, double *green, double *blue);
 void LineStrip(int n_segs, Eigen::Vector4d segs[], double r, double g, double b);
 void LineStrip(int n_segs, Eigen::Vector4d segs[], double r[], double g[], double b[]);
 void LineStrip(int n_segs, Eigen::Vector3d segs[], double r, double g, double b);
-void Point(Eigen::Vector4d point, double r, double g, double b);
-void Point(Eigen::Vector3d point, double r, double g, double b);
+
+void Point(Eigen::Vector3d point, int size, double r, double g, double b);
+void Points(int n_points, Eigen::Vector4d points[], int size, double r, double g, double b);
+void Points(int n_points, Eigen::Vector4d points[], int size, double r[], double g[], double b[]);
+
+inline void Point(Eigen::Vector4d point, int size, double r, double g, double b) {
+  Point(Vector4dTo3d(point), size, r, g, b);
+}
+
+inline void Point(Eigen::Vector4d point, double r, double g, double b) {
+  Point(point, 10, r, g, b);
+}
+
+inline void Point(Eigen::Vector3d point, double r, double g, double b) {
+  Point(point, 10, r, g, b);
+}
 
 
 #endif // DRAWING_PRIMITIVES_H_

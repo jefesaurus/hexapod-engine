@@ -68,19 +68,30 @@ void LineStrip(int n_segs, Eigen::Vector3d segs[], double r, double g, double b)
   glEnd();
 }
 
-void Point(Eigen::Vector3d point, double r, double g, double b) {
+void Point(Eigen::Vector3d point, int size, double r, double g, double b) {
   glColor3f((float)r, (float)g, (float)b);
-  glPointSize(10);
+  glPointSize(size);
   glBegin(GL_POINTS);
   glVertex3f(point[0], point[1], point[2]);
   glEnd();
 }
 
-void Point(Eigen::Vector4d point, double r, double g, double b) {
+void Points(int n_points, Eigen::Vector4d points[], int size, double r, double g, double b) {
   glColor3f((float)r, (float)g, (float)b);
-  glPointSize(10);
+  glPointSize(size);
   glBegin(GL_POINTS);
-  glVertex3f(point[0], point[1], point[2]);
+    for (int i = 0; i < n_points; i++) {
+      glVertex3f(points[i][0], points[i][1], points[i][2]);
+    }
+  glEnd();
+}
+void Points(int n_points, Eigen::Vector4d points[], int size, double r[], double g[], double b[]) {
+  glPointSize(size);
+  glBegin(GL_POINTS);
+    for (int i = 0; i < n_points; i++) {
+      glColor3f((float)r[i], (float)g[i], (float)b[i]);
+      glVertex3f(points[i][0], points[i][1], points[i][2]);
+    }
   glEnd();
 }
 
