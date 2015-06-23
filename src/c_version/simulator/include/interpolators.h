@@ -4,6 +4,8 @@
 #include <Eigen/Core>
 #include <cmath>
 
+#include "pose.h"
+
 template <class T>
 class Interpolator {
 public:
@@ -15,6 +17,16 @@ public:
   virtual Eigen::Vector3d Value(double progress)=0;
 };
 
+class PoseGen : public Interpolator<Pose> {
+public:
+  virtual Pose Value(double progress)=0;
+};
+
+template <class T> 
+inline static T LinearInterpolate(T start, T end, double progress) {
+  return (1.0 - progress) * start + progress * end;
+};
+
 class LinearPath : public PathGen {
 protected:
   Eigen::Vector3d start, end;
@@ -22,7 +34,7 @@ public:
   LinearPath() {};
   LinearPath(Eigen::Vector3d start, Eigen::Vector3d end) : start(start), end(end) {};
   Eigen::Vector3d Value(double progress) {
-    return (1.0 - progress) * start + progress*end;
+    return LinearInterpolate<Eigen::Vector3d>(start, end, progress);
   }
 
   void SetPoints(Eigen::Vector3d _start, Eigen::Vector3d _end) {
@@ -65,5 +77,25 @@ public:
     this->p3 = end;
   }
 };
+
+/*
+
+// Generate the cubic hermite spline path between two poses.
+class PoseSpline : public PoseGen {
+Pose p1, p2;
+public:
+  PoseSpline(Pose p1, Pose p2) : p1(p1), p2(p2) {}
+
+  Pose Value(double progress) {
+    // Linear interpolation of the orientation
+    double yaw, pitch, roll;
+    yaw = LinearInterpolate
+    // Hermite spline of position
+    double x, y, z;
+    return Pose(x, y, z, yaw, pitch, roll);
+  }
+
+}
+*/
 
 #endif // INTERPOLATORS_H_

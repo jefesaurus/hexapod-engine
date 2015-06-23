@@ -67,7 +67,7 @@ public:
 
 
 template <int n_legs, int n_joints>
-class ChassisController {
+class ChassisController : public Drawable {
   // The simulated model
   Chassis<n_legs, n_joints> model;
 

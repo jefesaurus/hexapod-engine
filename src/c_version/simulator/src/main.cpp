@@ -10,7 +10,7 @@ int main() {
 
   // Draws a chassis of with n legs randomized in state.
   //StaticChassisDrawTest<6>();
-  //StaticChassisDrawTest<600>();
+  //StaticChassisDrawTest<1000>();
 
   // Some miscellaneous intermediate tests.
   //TestIK();

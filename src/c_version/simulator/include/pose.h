@@ -4,6 +4,8 @@
 #include <Eigen/Core>
 #include <cmath>
 
+#include "drawing_primitives.h"
+
 class Pose {
   // Transformation Matrices
   Eigen::Matrix4d from_frame;
@@ -52,6 +54,13 @@ public:
   Pose AddDelta(double dx, double dy, double dz, double dyaw, double dpitch, double droll) {
     return Pose(x + dx, y + dy, z + dz, yaw + dyaw, pitch + dpitch, roll + droll);
   }
+
+  /*
+  TODO
+  void Draw(Eigen::Matrix4d to_global) {
+    
+  }
+  */
 };
 
 #endif // POSE_H_

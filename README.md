@@ -2,6 +2,11 @@ hexapod-engine
 ==============
 python/C hexapedal IK and gait engine
 
+[My website, with some images and more detail on this project.](http://glalonde.com/software/hexapod-engine/)
+
+[See this other page for more detail on the forward kinematics DH parameter symbolic simplifier.](http://glalonde.com/software/dh-parameter-compiler/)
+
+
 Current status:
 
 - Generic FK math works well and can output ready-to-compile C to handle transformations quickly
@@ -11,25 +16,15 @@ Current status:
 
 To run:
 
-Most objects, such as the Kinematic Chain and leg modles have some demo/test methods in them
+Most objects, such as the Kinematic Chain and leg models have some demo/test methods in them
 
 To start the interactive system use:
 
   python test_controller.py
 
-This starts forks two processes and a thread
-
-- The new thread takes input as keypresses on the command line
-- The original thread turns the graphical output
-- One of the new processes runs the update/input processing loop for the main model controller
-- The other process runs the update/input loop for the simulated model
-
-So there are 4 main blocks in the system:
-
-Input Parser->Leg Controller->Simulated Model->Graphical Representation
-
 
 C++ Version:
+==============
 
 I stalled out in the python version, and wanted something that would have the possibility of running on embedded hardware so I started working on a C++ version which can be found in
 
