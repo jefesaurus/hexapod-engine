@@ -212,34 +212,11 @@ void drawString3D(const char *str, float pos[3], float color[4], void *font) {
 // Draws 3D geometry using whatever OpenGL matrix is currently loaded.
 void DrawGeometry() {
   glLineWidth(5.0); 
-  glColor3f(1.0, 0.0, 1.0);
-  /*
-
-  glBegin(GL_LINES);
-  glVertex3f(0.0, 0.0, 0.0);
-  glVertex3f(0.0, 0, 1.0);
-
-  glColor3f(0.0, 1.0, 0.0);
-  glVertex3f(1.0, 0.5, 0.5);
-  glVertex3f(-1.0, 0.5, 0.5);
-  glEnd();
-  */
   scene_root->Draw();
 
-  glBegin(GL_LINES);
+  // Draw the origin's coordinate axes.
+  CoordinateAxes(.2, Eigen::Matrix4d::Identity());
 
-  glColor3f(1.0, 0.0, 0.0);
-  glVertex3f(0.0, 0.0, 0.0);
-  glVertex3f(.2, 0.0, 0.0);
-
-  glColor3f(0.0, 1.0, 0.0);
-  glVertex3f(0.0, 0.0, 0.0);
-  glVertex3f(0.0, .2, 0.0);
-
-  glColor3f(0.0, 0.0, 1.0);
-  glVertex3f(0.0, 0.0, 0.0);
-  glVertex3f(0.0, 0.0, .2);
-  glEnd();
 
   // Ground Plane
   /*

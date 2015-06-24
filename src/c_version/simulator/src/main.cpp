@@ -21,6 +21,8 @@ int main() {
   //TestRangeVis();
 
   // Animate one leg in motion.
-  TestAnimationIK();
+  //TestAnimationIK();
+
+  PosePathTest();
   return 0;
 }

@@ -85,6 +85,7 @@ void Points(int n_points, Eigen::Vector4d points[], int size, double r, double g
     }
   glEnd();
 }
+
 void Points(int n_points, Eigen::Vector4d points[], int size, double r[], double g[], double b[]) {
   glPointSize(size);
   glBegin(GL_POINTS);
@@ -92,6 +93,27 @@ void Points(int n_points, Eigen::Vector4d points[], int size, double r[], double
       glColor3f((float)r[i], (float)g[i], (float)b[i]);
       glVertex3f(points[i][0], points[i][1], points[i][2]);
     }
+  glEnd();
+}
+
+void CoordinateAxes(double size, Eigen::Matrix4d to_global) {
+  Eigen::Vector4d origin = to_global * Eigen::Vector4d(0.0, 0.0, 0.0, 1.0);
+  Eigen::Vector4d x = to_global * Eigen::Vector4d(size, 0.0, 0.0, 1.0);
+  Eigen::Vector4d y = to_global * Eigen::Vector4d(0.0, size, 0.0, 1.0);
+  Eigen::Vector4d z = to_global * Eigen::Vector4d(0.0, 0.0, size, 1.0);
+
+  glBegin(GL_LINES);
+  glColor3f(1.0, 0.0, 0.0);
+  glVertex3f(origin[0], origin[1], origin[2]);
+  glVertex3f(x[0], x[1], x[2]);
+
+  glColor3f(0.0, 1.0, 0.0);
+  glVertex3f(origin[0], origin[1], origin[2]);
+  glVertex3f(y[0], y[1], y[2]);
+
+  glColor3f(0.0, 0.0, 1.0);
+  glVertex3f(origin[0], origin[1], origin[2]);
+  glVertex3f(z[0], z[1], z[2]);
   glEnd();
 }
 

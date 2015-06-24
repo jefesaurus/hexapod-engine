@@ -10,6 +10,7 @@
 #include "interpolators.h"
 #include "test_parts.h"
 #include "utils.h"
+#include "pose.h"
 
 
 void TestIK() {
@@ -53,8 +54,6 @@ void StaticLegDrawTest() {
   StartWindow(&test_leg);
 }
 
-
-
 void PathTest() {
   Eigen::Vector3d point_a(2.5, 1.0, 0.0);
   Eigen::Vector3d point_b(2.5, -1.0, 0.0);
@@ -63,4 +62,24 @@ void PathTest() {
   for (int i = 0; i < num; i++) {
     printf("%f, %f\n", (float)i/num, path_a.Value((float)i/num)[1]);
   }
+}
+
+void PosePathTest() {
+  double start_angle = 0.0;
+  double end_angle = M_PI/2.0;
+  Pose offset(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  Pose p1(0.0, 0.0, 0.0, start_angle, 0.0, 0.0);
+  Pose p2(0.0, 0.0, 1.0, end_angle, 0.0, 0);
+
+
+  Eigen::Vector3d m1(2.0, 0.0, 0.0);
+  Eigen::Vector3d m2(0.0, -2.0, 0.0);
+  PoseSpline path(p1, p2, m1, m2);
+  OffsetPoseSpline derivative_path(path, offset);
+
+  Scene scene;
+  scene.AddDrawable(&path);
+  scene.AddDrawable(&derivative_path);
+
+  StartWindow(&scene);
 }

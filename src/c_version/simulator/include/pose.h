@@ -6,7 +6,7 @@
 
 #include "drawing_primitives.h"
 
-class Pose {
+class Pose : public Drawable {
   // Transformation Matrices
   Eigen::Matrix4d from_frame;
   Eigen::Matrix4d to_frame;
@@ -39,6 +39,14 @@ public:
     return from_frame * in; 
   }
 
+  inline Pose FromFrame(Pose in) const {
+    Eigen::Vector4d position = from_frame * Eigen::Vector4d(in.x, in.y, in.z, 1.0);
+    double n_yaw = yaw + in.yaw;
+    double n_pitch = pitch + in.pitch;
+    double n_roll = roll + in.roll;
+    return Pose(position[0], position[1], position[2], n_yaw, n_pitch, n_roll);
+  }
+
   inline Eigen::Vector4d ToFrame(Eigen::Vector4d in) const {
     return to_frame * in;
   }
@@ -55,12 +63,11 @@ public:
     return Pose(x + dx, y + dy, z + dz, yaw + dyaw, pitch + dpitch, roll + droll);
   }
 
-  /*
-  TODO
+
+
   void Draw(Eigen::Matrix4d to_global) {
-    
+    CoordinateAxes(.1, to_global * from_frame );
   }
-  */
 };
 
 #endif // POSE_H_

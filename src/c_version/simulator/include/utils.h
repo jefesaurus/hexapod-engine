@@ -18,6 +18,9 @@ inline static Eigen::Vector4d Vector3dTo4d(Eigen::Vector3d in) {
   return Eigen::Vector4d(in[0], in[1], in[2], 1.0);
 }
 
+inline static double WrapRadians(double x) {
+  return x-2*M_PI*floor(x/(2*M_PI)+0.5);  
+}
 
 
 #endif // UTILS_H_

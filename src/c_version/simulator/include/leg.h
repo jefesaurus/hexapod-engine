@@ -8,8 +8,8 @@
 #include <cmath>
 #include <memory>
 
-#include "kinematic_pair.h"
 #include "drawing_primitives.h"
+#include "kinematic_pair.h"
 #include "ik_solver.h"
 #include "interpolators.h"
 

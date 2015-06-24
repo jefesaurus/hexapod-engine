@@ -5,10 +5,11 @@
 #include <GL/glut.h>
 #include <Eigen/Core>
 #include <pthread.h>
+#include <vector>
 
-#include "pose.h"
 #include "utils.h"
 
+// TODO extend to animatable which has a better thread safety interface.
 class Drawable {
   pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -25,18 +26,20 @@ class Drawable {
     }
 };
 
+class Scene : public Drawable {
+  std::vector<Drawable*> objects;
 
-// A basic drawable object to offset the drawing origin.
-// Mainly for testing.
-class OriginOffset : public Drawable {
-  Drawable* child_node;
-  Pose pose;
 public:
-  OriginOffset(Drawable* child, Pose pose) : child_node(child), pose(pose) {};
+  Scene(){};
+  void AddDrawable(Drawable* to_add) {
+    objects.push_back(to_add);
+  }
+
   void Draw(Eigen::Matrix4d to_global) {
-    Eigen::Matrix4d child_to_global = to_global * pose.FromFrameMat();
-    child_node->Draw(child_to_global);
-  };
+    for (uint i = 0; i < objects.size(); i++) {
+      objects[i]->Draw(to_global);
+    }
+  }
 };
 
 void GetHeatMapColor(double value, double *red, double *green, double *blue);
@@ -60,5 +63,7 @@ inline void Point(Eigen::Vector3d point, double r, double g, double b) {
   Point(point, 10, r, g, b);
 }
 
+
+void CoordinateAxes(double size, Eigen::Matrix4d to_global);
 
 #endif // DRAWING_PRIMITIVES_H_

@@ -17,14 +17,25 @@ public:
   virtual Eigen::Vector3d Value(double progress)=0;
 };
 
-class PoseGen : public Interpolator<Pose> {
+class PoseGen : public Interpolator<Pose>, public Drawable {
 public:
   virtual Pose Value(double progress)=0;
+  void Draw(Eigen::Matrix4d to_global) {
+    static int n_points = 50;
+    for (int i = 0; i <= n_points; i++) {
+      Pose inter = Value(((float)i/n_points));
+      inter.Draw(to_global);
+    }
+  }
 };
 
 template <class T> 
 inline static T LinearInterpolate(T start, T end, double progress) {
   return (1.0 - progress) * start + progress * end;
+};
+
+inline static double LinearInterpolateRadians(double start, double end, double progress) {
+  return start + progress*WrapRadians(end - start);
 };
 
 class LinearPath : public PathGen {
@@ -50,6 +61,7 @@ public:
   CubicBezierPath() {};
   CubicBezierPath(Eigen::Vector3d p0, Eigen::Vector3d p1, Eigen::Vector3d p2, Eigen::Vector3d p3) : p0(p0), p1(p1), p2(p2), p3(p3) {};
   Eigen::Vector3d Value(double progress) {
+    // TODO replace with hermite, or write out power explicitly.
     return pow((1 - progress), 3)*p0 + 3*pow((1 - progress), 2)*progress*p1 + 3*(1 - progress)*pow(progress, 2)*p2 + pow(progress, 3)*p3;
   }
 
@@ -78,24 +90,46 @@ public:
   }
 };
 
-/*
+template <class T> 
+inline static T CubicHermiteInterpolate(T p1, T p2, T m1, T m2, double p) {
+  return (2*p*p*p - 3*p*p + 1)*p1 + (p*p*p - 2*p*p + p)*m1 + (-2*p*p*p + 3*p*p)*p2 + (p*p*p - p*p)*m2;
+};
 
 // Generate the cubic hermite spline path between two poses.
 class PoseSpline : public PoseGen {
 Pose p1, p2;
+// The slopes at the respective poses.
+Eigen::Vector3d m1, m2;
 public:
-  PoseSpline(Pose p1, Pose p2) : p1(p1), p2(p2) {}
+  PoseSpline(Pose p1, Pose p2, Eigen::Vector3d m1, Eigen::Vector3d m2) : p1(p1), p2(p2), m1(m1), m2(m2) {}
 
   Pose Value(double progress) {
     // Linear interpolation of the orientation
-    double yaw, pitch, roll;
-    yaw = LinearInterpolate
-    // Hermite spline of position
-    double x, y, z;
-    return Pose(x, y, z, yaw, pitch, roll);
-  }
+    double yaw = LinearInterpolateRadians(p1.yaw, p2.yaw, progress);
+    double pitch = LinearInterpolateRadians(p1.pitch, p2.pitch, progress);
+    double roll = LinearInterpolateRadians(p1.roll, p2.roll, progress);
 
-}
-*/
+    // Hermite spline of position
+    Eigen::Vector3d p1_pos(p1.x, p1.y, p1.z);
+    Eigen::Vector3d p2_pos(p2.x, p2.y, p2.z);
+
+    Eigen::Vector3d position = CubicHermiteInterpolate<Eigen::Vector3d>(p1_pos, p2_pos, m1, m2, progress);
+    return Pose(position[0], position[1], position[2], yaw, pitch, roll);
+  }
+};
+
+
+// Same as regular PoseSpline but adds a rigid offset pose.
+class OffsetPoseSpline : public PoseGen {
+  PoseSpline base_spline;
+  Pose base_offset;
+
+public:
+  OffsetPoseSpline(PoseSpline base_spline, Pose base_offset) : base_spline(base_spline), base_offset(base_offset){}
+  Pose Value(double progress) {
+    Pose base_pose = base_spline.Value(progress);
+    return base_pose.FromFrame(base_offset);
+  }
+};
 
 #endif // INTERPOLATORS_H_

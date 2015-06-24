@@ -1,17 +1,17 @@
 #ifndef BASIC_EXAMPLES_H_
 #define BASIC_EXAMPLES_H_
 
+#include "chassis.h"
+#include "test_parts.h"
+#include "viewer.h"
+#include "utils.h"
 
 
 void TestIK();
 void StaticLegDrawTest();
 void PathTest();
+void PosePathTest();
 
-
-#include "chassis.h"
-#include "test_parts.h"
-#include "viewer.h"
-#include "utils.h"
 template <int n_legs>
 void StaticChassisDrawTest() {
   Chassis<n_legs, 3> test_chassis = GetTestChassis<n_legs>();
