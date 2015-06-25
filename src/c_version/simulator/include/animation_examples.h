@@ -3,5 +3,6 @@
 
 void TestAnimation();
 void TestAnimationIK();
+void TestAnimationRandom();
 
 #endif // ANIMATION_EXAMPLES_H_

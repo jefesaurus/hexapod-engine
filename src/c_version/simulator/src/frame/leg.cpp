@@ -89,12 +89,16 @@ void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
   model->Draw(to_global);
 
   // Draw the commanded path, if there is a commanded path.
+  /*
   Eigen::Vector4d path_segs[path_draw_points];
   double r[path_draw_points];
   double g[path_draw_points];
   double b[path_draw_points];
+  */
   Eigen::Vector4d local_point;
   if (deadline > 0 && path != NULL) {
+    path->Draw(to_global);
+    /*
     double progress;
     for (int i = 0; i < path_draw_points; i++) {
       progress = (float)i/(path_draw_points - 1);
@@ -102,11 +106,11 @@ void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
       path_segs[i] = to_global * local_point;
       GetHeatMapColor(progress, &r[i], &g[i], &b[i]);
     }
-
     LineStrip(path_draw_points, path_segs, r, g, b);
+    */
 
     // Draw the point in time along the path where the leg should aim for
-    progress = (float)(current_time)/deadline;
+    double progress = (float)(current_time)/deadline;
     local_point << path->Value(progress), 1;
     Eigen::Vector4d global_point = to_global * local_point;
     Point(global_point, 0.0, 1.0, 0.0);

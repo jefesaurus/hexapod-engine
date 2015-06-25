@@ -78,4 +78,11 @@ public:
   };
 };
 
+// A revolute joint actuated by the Dynamixel XL-320 Servo.
+// The servo limits and max velocity are included.
+class XL320 : public RevoluteJoint {
+public:
+  XL320(double _alpha, double _r, double _d) : RevoluteJoint(-5.23598776/2.0, 5.23598776/2.0, 11.9380521, _alpha, _r, _d) {};
+};
+
 #endif // KINEMATIC_PAIR_H

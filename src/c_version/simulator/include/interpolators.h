@@ -12,11 +12,22 @@ public:
   virtual T Value(double progress)=0;
 };
 
-class PathGen : public Interpolator<Eigen::Vector3d> {
+// Represents a 3-dimensional position path.
+class PathGen : public Interpolator<Eigen::Vector3d>, public Drawable {
 public:
   virtual Eigen::Vector3d Value(double progress)=0;
+  void Draw(Eigen::Matrix4d to_global) {
+    static int n_points = 50;
+    Eigen::Vector4d points[n_points];
+    for (int i = 0; i <= n_points; i++) {
+      Eigen::Vector3d inter = Value(((float)i/(n_points - 1)));
+      points[i] = to_global * Vector3dTo4d(inter);
+    }
+    LineStrip(n_points, points, 1.0, 0.0, 0.0);
+  }
 };
 
+// Represents a 6-dimensional position and orientation path.
 class PoseGen : public Interpolator<Pose>, public Drawable {
 public:
   virtual Pose Value(double progress)=0;
@@ -54,6 +65,16 @@ public:
   }
 };
 
+template <class T> 
+inline static T CubicHermiteInterpolate(T p1, T p2, T m1, T m2, double p) {
+  return (2*p*p*p - 3*p*p + 1)*p1 + (p*p*p - 2*p*p + p)*m1 + (-2*p*p*p + 3*p*p)*p2 + (p*p*p - p*p)*m2;
+};
+
+template <class T> 
+inline static T CubicBezierInterpolate(T p1, T p2, T p3, T p4, double p) {
+  return (1-p)*(1-p)*(1-p)*p1 + 3*(1-p)*(1-p)*p*p2 + 3*(1-p)*p*p*p3 + p*p*p*p4;
+};
+
 class CubicBezierPath : public PathGen {
 protected:
   Eigen::Vector3d p0, p1, p2, p3;
@@ -61,8 +82,7 @@ public:
   CubicBezierPath() {};
   CubicBezierPath(Eigen::Vector3d p0, Eigen::Vector3d p1, Eigen::Vector3d p2, Eigen::Vector3d p3) : p0(p0), p1(p1), p2(p2), p3(p3) {};
   Eigen::Vector3d Value(double progress) {
-    // TODO replace with hermite, or write out power explicitly.
-    return pow((1 - progress), 3)*p0 + 3*pow((1 - progress), 2)*progress*p1 + 3*(1 - progress)*pow(progress, 2)*p2 + pow(progress, 3)*p3;
+    return CubicBezierInterpolate<Eigen::Vector3d>(p0, p1, p2, p3, progress);
   }
 
   void SetPoints(Eigen::Vector3d _p0, Eigen::Vector3d _p1, Eigen::Vector3d _p2, Eigen::Vector3d _p3) {
@@ -90,9 +110,24 @@ public:
   }
 };
 
-template <class T> 
-inline static T CubicHermiteInterpolate(T p1, T p2, T m1, T m2, double p) {
-  return (2*p*p*p - 3*p*p + 1)*p1 + (p*p*p - 2*p*p + p)*m1 + (-2*p*p*p + 3*p*p)*p2 + (p*p*p - p*p)*m2;
+class CubicHermitePath : public PathGen {
+protected:
+  // Endpoints.
+  Eigen::Vector3d p0, p1;
+  // Derivatives at end points.
+  Eigen::Vector3d m0, m1;
+public:
+  CubicHermitePath() {};
+  CubicHermitePath(Eigen::Vector3d p0, Eigen::Vector3d p1, Eigen::Vector3d m0, Eigen::Vector3d m1) : p0(p0), p1(p1), m0(m0), m1(m1) {};
+  Eigen::Vector3d Value(double progress) {
+    return CubicHermiteInterpolate<Eigen::Vector3d>(p0, p1, m0, m1, progress);
+  }
+  void SetPoints(Eigen::Vector3d _p0, Eigen::Vector3d _p1, Eigen::Vector3d _m0, Eigen::Vector3d _m1) {
+    p0 = _p0;
+    p1 = _p1;
+    m0 = _m0;
+    m1 = _m1;
+  }
 };
 
 // Generate the cubic hermite spline path between two poses.

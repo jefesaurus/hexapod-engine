@@ -16,7 +16,7 @@ CFLAGS := -g -Wall -O3 -std=c++11 -msse -msse2 -msse3 -mmmx -m3dnow -march=nativ
 endif
 
 LIB := -lglut -lGLU -lGL -lm -lpthread
-INC := -I include -I ./eigen
+INC := -I include -I ./eigen -I ./dlib
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."

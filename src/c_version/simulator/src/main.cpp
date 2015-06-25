@@ -3,6 +3,7 @@
 #include "animation_examples.h"
 #include "basic_examples.h"
 #include "range_vis.h"
+#include "minimization.h"
 
 int main() {
   // Draws one static leg
@@ -22,7 +23,11 @@ int main() {
 
   // Animate one leg in motion.
   //TestAnimationIK();
+  TestAnimationRandom();
 
-  PosePathTest();
+  // An example of how to make splines for position and orientation.
+  //PosePathTest();
+
+  //TestMinimization();
   return 0;
 }

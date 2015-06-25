@@ -142,3 +142,97 @@ void TestAnimationIK() {
   StartWindow(&(thread_args.cont));
   pthread_join(movement, NULL);
 }
+
+/********************************************************/
+// An example of randomized animation using a IK controlled test leg.
+/********************************************************/
+struct ThreadArgsRandom {
+  Leg<3> leg;
+  LegController<3> cont;
+};
+
+void* AnimationLoopRandom(void* argptr) {
+  Timer timer;
+  timer.start();
+  double last_time = timer.getElapsedTimeInSec();
+  double current_time = timer.getElapsedTimeInSec();
+  ThreadArgsIK* args = (ThreadArgsIK*) argptr;
+
+  double space_lim = 1.0;
+  double vel_lim = 5.0;
+  Eigen::Vector3d center(2.0, 0.0, 0.0);
+  double deadline = 2.0;
+
+  // Start wherever the leg is right now.
+  Eigen::Vector3d start = args->cont.GetEndpoint();
+  Eigen::Vector3d start_deriv(0.0, 0.0, 0.0); 
+
+  // Randomize ending.
+  Eigen::Vector3d end(center[0] + RandFloat(-space_lim, space_lim), 
+                      center[1] + RandFloat(-space_lim, space_lim),
+                      center[2] + RandFloat(-space_lim, space_lim));
+  Eigen::Vector3d end_deriv(RandFloat(-vel_lim, vel_lim), 
+                            RandFloat(-vel_lim, vel_lim),
+                            RandFloat(-vel_lim, vel_lim));
+  CubicHermitePath path(start, end, start_deriv, end_deriv);
+
+
+  // Set the initial command so that it moves to point_a.
+  //args->cont.SetControl(&path, deadline);
+  LegCommand<3> command;
+
+  // The control/simulation update loop.
+  while (true) {
+    current_time = timer.getElapsedTimeInSec();
+
+    // Update the leg simulation with the current control inputs.
+    args->leg.UpdateState(current_time - last_time);
+
+    if (!args->cont.IsMoving()) {
+      // Cycle the previous endpoint to the new start point
+      start = end;
+      start_deriv = end_deriv;
+
+      // Randomize the new endpoints.
+      end[0] = center[0] + RandFloat(-space_lim, space_lim); 
+      end[1] = center[1] + RandFloat(-space_lim, space_lim); 
+      end[2] = center[2] + RandFloat(-space_lim, space_lim); 
+
+      end_deriv[0] = RandFloat(-vel_lim, vel_lim); 
+      end_deriv[1] = RandFloat(-vel_lim, vel_lim); 
+      end_deriv[2] = RandFloat(-vel_lim, vel_lim); 
+
+      // Create a new path and send it to the controller.
+      path.SetPoints(start, end, start_deriv, end_deriv);
+      args->cont.SetControl(&path, deadline);
+    }
+
+    // Update the controller.
+    args->cont.UpdateState(current_time - last_time, &command);
+
+    // Set the new control inputs on the simulation.
+    args->leg.SetCommand(command);
+    last_time = current_time;
+    usleep(10000);
+  }
+  return NULL;
+}
+
+void TestAnimationRandom() {
+  // Get a test leg
+  Leg<3> test_leg = GetTestLeg();
+  ThreadArgsRandom thread_args;
+  thread_args.leg = test_leg;
+  thread_args.cont = GetTestLegController(&thread_args.leg);
+  
+  double leg_state_a[3] = {0.0, M_PI/4.0, -M_PI/2.0};
+  thread_args.cont.SetState(leg_state_a);
+
+  // Create a thread to move the leg over time
+  pthread_t movement;
+  pthread_create(&movement, NULL, AnimationLoopRandom, (void*) &thread_args);
+
+  // Start a window to draw the leg as it moves.
+  StartWindow(&(thread_args.cont));
+  pthread_join(movement, NULL);
+}
