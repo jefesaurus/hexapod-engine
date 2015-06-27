@@ -128,7 +128,6 @@ public:
   }
 
   // Implement the drawable interface.
-  // 
   void Draw(Eigen::Matrix4d to_global) {
     int strip_size = 2*n_joints;
     Eigen::Vector4d segs[strip_size];
@@ -147,6 +146,25 @@ public:
     }
     LineStrip(strip_size, segs, r, g, b);
   }
+
+  void Draw(Eigen::Matrix4d to_global, double r_in, double g_in, double b_in) {
+    int strip_size = 2*n_joints;
+    Eigen::Vector4d segs[strip_size];
+    double r[strip_size];
+    double g[strip_size];
+    double b[strip_size];
+    AllJoints(segs);
+
+    // Transform the points into the global frame using the provided matrix.
+    for (int i = 0; i < strip_size; i++) {
+      segs[i] = to_global * segs[i];
+      double val = .2 + .8*(double)i/(strip_size - 1);
+      r[i] = r_in*val;
+      b[i] = g_in*val;
+      g[i] = b_in*val;
+    }
+    LineStrip(strip_size, segs, r, g, b);
+  }
 };
 
 
@@ -162,12 +180,15 @@ protected:
 
   // Deadline is the time when the controller is attempting to finish its current movement
   // Current time is the progress since that command was started.
-  double deadline, current_time;
+  double deadline = 0;
+  double current_time = 0;
 
   // This is the path the controller should take.
-  PathGen* path;
+  PathGen* path = NULL;
+  bool motion_complete = true;
+  bool infeasible= false;
 
-  Eigen::Vector3d home_point;
+  static constexpr double destination_epsilon_squared = 1e-5*1e-5;
 
 public:
   LegController() {};
@@ -175,12 +196,14 @@ public:
 
   void SetState(double angles[n_joints]);
   void SetControl(PathGen* path, double deadline);
+
   int GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command_to_set);
   int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
 
   // Updates the state of the controller, not the state of the underlying model.
   void UpdateState(double time_elapsed, LegCommand<n_joints>* out_command);
-  bool IsMoving() const { return model->IsMoving(); }
+  inline bool InProgress() const { return !IsOverdue() || (!motion_complete && !infeasible); }
+  inline bool IsOverdue() const { return (current_time > deadline); };
   Eigen::Vector3d GetEndpoint();
 
   inline const Leg<n_joints>* Model() const { return model; };

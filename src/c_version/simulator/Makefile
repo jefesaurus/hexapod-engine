@@ -15,8 +15,8 @@ else
 CFLAGS := -g -Wall -O3 -std=c++11 -msse -msse2 -msse3 -mmmx -m3dnow -march=native
 endif
 
-LIB := -lglut -lGLU -lGL -lm -lpthread
-INC := -I include -I ./eigen -I ./dlib
+LIB := -lglut -lGLU -lGL -lm -lpthread -lfreetype
+INC := -I include -I ./eigen -I ./dlib -I /usr/include/freetype2
 
 $(TARGET): $(OBJECTS)
 	@echo " Linking..."

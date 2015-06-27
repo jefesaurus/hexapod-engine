@@ -3,7 +3,7 @@
 
 // 0: Coxa, 1: Femur, 2: Tibia
 // TODO: Get check feasibility more exactly, and check all possible solutions.
-int IK3DoF::Solve(double x, double y, double z, double angles[], int num_angles) {
+double IK3DoF::Solve(double x, double y, double z, double angles[], int num_angles) {
   double coxa_angle = 0.0;
   // Start by angling directly to the point with the coxa
   if (!(x == 0 && y == 0)) {

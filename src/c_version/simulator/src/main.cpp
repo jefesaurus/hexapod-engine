@@ -4,8 +4,9 @@
 #include "basic_examples.h"
 #include "range_vis.h"
 #include "minimization.h"
+#include "font_fun.h"
 
-int main() {
+int main(int argc, char** argv) {
   // Draws one static leg
   //StaticLegDrawTest();
 
@@ -23,11 +24,16 @@ int main() {
 
   // Animate one leg in motion.
   //TestAnimationIK();
-  TestAnimationRandom();
+  //TestAnimationRandom();
 
   // An example of how to make splines for position and orientation.
   //PosePathTest();
+  //ChassisPosePathTest();
 
   //TestMinimization();
+
+  // Test font drawing
+  FontFun(argc, argv);
+
   return 0;
 }

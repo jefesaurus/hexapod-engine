@@ -63,8 +63,6 @@ public:
     return Pose(x + dx, y + dy, z + dz, yaw + dyaw, pitch + dpitch, roll + droll);
   }
 
-
-
   void Draw(Eigen::Matrix4d to_global) {
     CoordinateAxes(.1, to_global * from_frame );
   }

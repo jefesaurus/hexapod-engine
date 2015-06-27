@@ -15,6 +15,7 @@ void LegController<n_joints>::SetControl(PathGen* _path, double _deadline) {
   path = _path;
   deadline = _deadline;
   current_time = 0; // Reset time.
+  motion_complete = false;
 }
 
 template<int n_joints> 
@@ -53,27 +54,41 @@ void LegController<n_joints>::UpdateState(double time_elapsed, LegCommand<n_join
   // Update the state of the simulation
   current_time += time_elapsed;
 
-  LegCommand<n_joints> command;
-  if (deadline > 0 && path != NULL) {
-    double progress = (current_time + time_elapsed)/deadline;
-    // Finished
-    if (progress > 1.0) {
-      progress = 1.0;
-      deadline = -1;
+  // Hold position if there is no controlled path
+  if (path == NULL) {
+    motion_complete = true;
+    for (int i = 0; i < n_joints; i++) {
+      out_command->joint_commands[i].angle = model->joints[i].Theta();
     }
-    Eigen::Vector3d next_interpoint = path->Value(progress);
-    //printf("%f, %f, %f\n", next_interpoint[0], next_interpoint[1], next_interpoint[2]);
+    return;
+  }
 
-    int solved = GetJointCommands(next_interpoint, time_elapsed, &command);
-    if (solved == 0) {
-      *out_command = command;
-    } else {
-      printf("Infeasible\n");
-      // Set the command to the current state so the leg freezes.
-      for (int i = 0; i < n_joints; i++) {
-        out_command->joint_commands[i].angle = model->joints[i].Theta();
-      }
+  LegCommand<n_joints> command;
+
+  // Clamp progress to 1.0
+  double progress = (current_time + time_elapsed)/deadline;
+  if (progress > 1.0) {
+    progress = 1.0;
+  }
+
+  // Get the next point in the path and attempt to head towards it.
+  Eigen::Vector3d next_interpoint = path->Value(progress);
+  int solved = GetJointCommands(next_interpoint, time_elapsed, &command);
+  if (solved == 0) {
+    *out_command = command;
+    infeasible = false;
+  } else {
+    infeasible = true;
+    // Hold position
+    for (int i = 0; i < n_joints; i++) {
+      out_command->joint_commands[i].angle = model->joints[i].Theta();
     }
+  }
+
+  if (!motion_complete &&
+      current_time >= deadline && 
+      (path->Value(1.0) - GetEndpoint()).squaredNorm() < destination_epsilon_squared) {
+    motion_complete = true;
   }
 }
 
@@ -86,28 +101,16 @@ static const int path_draw_points = 100;
 template<int n_joints> 
 void LegController<n_joints>::Draw(Eigen::Matrix4d to_global) {
   // Draw the simulated leg model.
-  model->Draw(to_global);
+  if (infeasible) {
+    model->Draw(to_global, 1.0, 0.0, 0.0);
+  } else {
+    model->Draw(to_global);
+  }
 
   // Draw the commanded path, if there is a commanded path.
-  /*
-  Eigen::Vector4d path_segs[path_draw_points];
-  double r[path_draw_points];
-  double g[path_draw_points];
-  double b[path_draw_points];
-  */
   Eigen::Vector4d local_point;
-  if (deadline > 0 && path != NULL) {
+  if (path != NULL) {
     path->Draw(to_global);
-    /*
-    double progress;
-    for (int i = 0; i < path_draw_points; i++) {
-      progress = (float)i/(path_draw_points - 1);
-      local_point << path->Value(progress), 1;
-      path_segs[i] = to_global * local_point;
-      GetHeatMapColor(progress, &r[i], &g[i], &b[i]);
-    }
-    LineStrip(path_draw_points, path_segs, r, g, b);
-    */
 
     // Draw the point in time along the path where the leg should aim for
     double progress = (float)(current_time)/deadline;

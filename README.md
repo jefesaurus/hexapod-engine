@@ -33,3 +33,6 @@ I stalled out in the python version, and wanted something that would have the po
 There is a GLUT viewer that can show animated legs and chassis. Aside from GLUT the only other dependency is Eigen, for linear algebra.
 On ubuntu just download the eigen folder and drop it into the "simulator" folder(or edit the makefile). For GLUT, I think just do the package manager installation and that should be fine.
 Check the main file for some examples on what it does currently. Mostly Leg stuff for now, but I'll add the chassis stuff in the next month or so and then eventually actually test it.
+
+Until I stratify my makefile and source files, you'll also need to add "dlib" to the top level directory, which I use for some optimization functions.
+You will also need to have "FreeType2" (libfreetype, libfreetype-dev) installed. I believe the package manager version should work.

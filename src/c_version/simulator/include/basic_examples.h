@@ -11,6 +11,7 @@ void TestIK();
 void StaticLegDrawTest();
 void PathTest();
 void PosePathTest();
+void ChassisPosePathTest();
 
 template <int n_legs>
 void StaticChassisDrawTest() {

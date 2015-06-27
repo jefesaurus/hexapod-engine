@@ -72,10 +72,12 @@ public:
   void UpdateState(double time_elapsed);
 
   inline double MaxAngularVelocity() const { return max_angular_velocity;};
+  inline double MinTheta() const { return min_theta; }
+  inline double MaxTheta() const { return max_theta; }
 
   inline bool IsMoving() const {
     return is_moving && is_active;
-  };
+  }
 };
 
 // A revolute joint actuated by the Dynamixel XL-320 Servo.

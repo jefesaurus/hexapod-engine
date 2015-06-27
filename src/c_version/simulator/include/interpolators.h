@@ -16,6 +16,8 @@ public:
 class PathGen : public Interpolator<Eigen::Vector3d>, public Drawable {
 public:
   virtual Eigen::Vector3d Value(double progress)=0;
+  virtual void Transform(Eigen::Matrix4d transform)=0;
+
   void Draw(Eigen::Matrix4d to_global) {
     static int n_points = 50;
     Eigen::Vector4d points[n_points];
@@ -32,7 +34,7 @@ class PoseGen : public Interpolator<Pose>, public Drawable {
 public:
   virtual Pose Value(double progress)=0;
   void Draw(Eigen::Matrix4d to_global) {
-    static int n_points = 50;
+    static int n_points = 100;
     for (int i = 0; i <= n_points; i++) {
       Pose inter = Value(((float)i/n_points));
       inter.Draw(to_global);
@@ -63,6 +65,33 @@ public:
     start = _start;
     end = _end;
   }
+
+  void Transform(Eigen::Matrix4d transform) {
+    start = Vector4dTo3d(transform * Vector3dTo4d(start));
+    end = Vector4dTo3d(transform * Vector3dTo4d(end));
+  }
+};
+
+template <class T> 
+inline static T ConicBezierInterpolate(T p1, T p2, T p3, double p) {
+  return (1-p)*(1-p)*p1 + 2*(1-p)*p*p2 + p*p*p3;
+};
+
+class ConicBezierPath : public PathGen {
+protected:
+  Eigen::Vector3d p0, p1, p2;
+public:
+  ConicBezierPath() {};
+  ConicBezierPath(Eigen::Vector3d p0, Eigen::Vector3d p1, Eigen::Vector3d p2) : p0(p0), p1(p1), p2(p2) {};
+  Eigen::Vector3d Value(double progress) {
+    return ConicBezierInterpolate<Eigen::Vector3d>(p0, p1, p2, progress);
+  }
+
+  void Transform(Eigen::Matrix4d transform) {
+    p0 = Vector4dTo3d(transform * Vector3dTo4d(p0));
+    p1 = Vector4dTo3d(transform * Vector3dTo4d(p1));
+    p2 = Vector4dTo3d(transform * Vector3dTo4d(p2));
+  }
 };
 
 template <class T> 
@@ -90,6 +119,13 @@ public:
     p1 = _p1;
     p2 = _p2;
     p3 = _p3;
+  }
+
+  void Transform(Eigen::Matrix4d transform) {
+    p0 = Vector4dTo3d(transform * Vector3dTo4d(p0));
+    p1 = Vector4dTo3d(transform * Vector3dTo4d(p1));
+    p2 = Vector4dTo3d(transform * Vector3dTo4d(p2));
+    p3 = Vector4dTo3d(transform * Vector3dTo4d(p3));
   }
 };
 
@@ -128,6 +164,13 @@ public:
     m0 = _m0;
     m1 = _m1;
   }
+
+  void Transform(Eigen::Matrix4d transform) {
+    p0 = Vector4dTo3d(transform * Vector3dTo4d(p0));
+    p1 = Vector4dTo3d(transform * Vector3dTo4d(p1));
+    m0 = Vector4dTo3d(transform * Vector3dTo4d(m0));
+    m1 = Vector4dTo3d(transform * Vector3dTo4d(m1));
+  }
 };
 
 // Generate the cubic hermite spline path between two poses.
@@ -155,14 +198,15 @@ public:
 
 
 // Same as regular PoseSpline but adds a rigid offset pose.
-class OffsetPoseSpline : public PoseGen {
-  PoseSpline base_spline;
+class OffsetPoseGen : public PoseGen {
+  PoseGen* base_gen;
   Pose base_offset;
 
 public:
-  OffsetPoseSpline(PoseSpline base_spline, Pose base_offset) : base_spline(base_spline), base_offset(base_offset){}
+  OffsetPoseGen() {};
+  OffsetPoseGen(PoseGen* base_gen, Pose base_offset) : base_gen(base_gen), base_offset(base_offset){}
   Pose Value(double progress) {
-    Pose base_pose = base_spline.Value(progress);
+    Pose base_pose = base_gen->Value(progress);
     return base_pose.FromFrame(base_offset);
   }
 };

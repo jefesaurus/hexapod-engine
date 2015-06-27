@@ -75,11 +75,31 @@ void PosePathTest() {
   Eigen::Vector3d m1(2.0, 0.0, 0.0);
   Eigen::Vector3d m2(0.0, -2.0, 0.0);
   PoseSpline path(p1, p2, m1, m2);
-  OffsetPoseSpline derivative_path(path, offset);
+  OffsetPoseGen derivative_path(&path, offset);
 
   Scene scene;
   scene.AddDrawable(&path);
   scene.AddDrawable(&derivative_path);
 
+  StartWindow(&scene);
+}
+
+void ChassisPosePathTest() {
+  double start_angle = 0.0;
+  double end_angle = M_PI/6.0;
+
+  Pose p1(0.0, 0.0, 0.0, start_angle, 0.0, 0.0);
+  Pose p2(1.0, 0.0, 0.0, end_angle, 0.0, 0.0);
+  Eigen::Vector3d m1(0.0, 0.0, 0.0);
+  Eigen::Vector3d m2(0.0, 0.0, 0.0);
+
+
+  PoseSpline path(p1, p2, m1, m2);
+
+  ChassisController<6, 3> test_chassis = GetTestChassisController<6>();
+  test_chassis.SetControl(&path);
+
+  Scene scene;
+  scene.AddDrawable(&test_chassis);
   StartWindow(&scene);
 }

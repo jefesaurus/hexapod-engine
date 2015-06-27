@@ -103,7 +103,7 @@ void* AnimationLoopIK(void* argptr) {
 
   LegCommand<3> command;
   while (true) {
-    if (!args->cont.IsMoving()) {
+    if (!args->cont.InProgress()) {
       if (state_a) {
         args->cont.SetControl(&path_b, deadline_b);
         state_a = false;
@@ -158,7 +158,7 @@ void* AnimationLoopRandom(void* argptr) {
   double current_time = timer.getElapsedTimeInSec();
   ThreadArgsIK* args = (ThreadArgsIK*) argptr;
 
-  double space_lim = 1.0;
+  double space_lim = 3.0;
   double vel_lim = 5.0;
   Eigen::Vector3d center(2.0, 0.0, 0.0);
   double deadline = 2.0;
@@ -178,7 +178,7 @@ void* AnimationLoopRandom(void* argptr) {
 
 
   // Set the initial command so that it moves to point_a.
-  //args->cont.SetControl(&path, deadline);
+  args->cont.SetControl(&path, deadline);
   LegCommand<3> command;
 
   // The control/simulation update loop.
@@ -188,7 +188,7 @@ void* AnimationLoopRandom(void* argptr) {
     // Update the leg simulation with the current control inputs.
     args->leg.UpdateState(current_time - last_time);
 
-    if (!args->cont.IsMoving()) {
+    if (!args->cont.InProgress()) {
       // Cycle the previous endpoint to the new start point
       start = end;
       start_deriv = end_deriv;
@@ -236,3 +236,71 @@ void TestAnimationRandom() {
   StartWindow(&(thread_args.cont));
   pthread_join(movement, NULL);
 }
+
+
+/********************************************************/
+// An example of animation using a Chassis Controller
+/********************************************************/
+/*
+struct ThreadArgsChassis {
+  ChassisController<6, 3> cont;
+};
+
+void* AnimationLoopChassis(void* argptr) {
+  Eigen::Vector3d point_a(2.5, 1.0, 0.0);
+  Eigen::Vector3d point_b(2.5, -1.0, 0.0);
+  LinearPath path_a(point_b, point_a);
+  // One curved bezier path of height 1.0
+  StepPath path_b(point_a, point_b, 2.0);
+
+  double deadline_a = 1.0;
+  double deadline_b = 1.0;
+
+  Timer timer;
+  timer.start();
+  double last_time = timer.getElapsedTimeInSec();
+  double current_time = timer.getElapsedTimeInSec();
+  ThreadArgsIK* args = (ThreadArgsIK*) argptr;
+
+  // Set the initial command so that it moves to point_a.
+  Eigen::Vector3d starting_point = args->cont.GetEndpoint();
+  LinearPath path_to_start(starting_point, point_a);
+  args->cont.SetControl(&path_to_start, deadline_a);
+  bool state_a = true;
+
+  LegCommand<3> command;
+  while (true) {
+    if (!args->cont.IsMoving()) {
+      if (state_a) {
+        args->cont.SetControl(&path_b, deadline_b);
+        state_a = false;
+      } else {
+        args->cont.SetControl(&path_a, deadline_a);
+        state_a = true;
+      }
+    }
+    
+    current_time = timer.getElapsedTimeInSec();
+    args->leg.UpdateState(current_time - last_time);
+    args->cont.UpdateState(current_time - last_time, &command);
+    args->leg.SetCommand(command);
+    last_time = current_time;
+
+    usleep(10000);
+  }
+  return NULL;
+}
+
+void TestAnimationChassis() {
+  ThreadArgsChassis thread_args;
+  thread_args.cont = GetTestChassisController<6>();
+  
+  // Create a thread to move the leg over time
+  pthread_t movement;
+  pthread_create(&movement, NULL, AnimationLoopChassis, (void*) &thread_args);
+
+  // Start a window to draw the leg as it moves.
+  StartWindow(&(thread_args.cont));
+  pthread_join(movement, NULL);
+}
+*/

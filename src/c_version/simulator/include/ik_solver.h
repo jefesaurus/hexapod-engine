@@ -5,8 +5,9 @@
 
 class IKSolver {
 public:
-  // Returns 0 if solved, 1 if couldn't find a solution.
-  virtual int Solve(double x, double y, double z, double angles[], int num_angles)=0;
+  // Returns positive "score" if a solution was found, or 0 or a negative score if no solution was found.
+  // More positive means further within the bounds of reachability.
+  virtual double Solve(double x, double y, double z, double angles[], int num_angles)=0;
 };
 
 class IK3DoF : public IKSolver {
@@ -14,6 +15,11 @@ class IK3DoF : public IKSolver {
   double total_d;
   double max_range_squared;
   double min_range_squared;
+
+  // Angular extremes.
+  double coxa_min, coxa_max;
+  double femur_min, femur_max;
+  double tibia_min, tibia_max;
 
 public:
   IK3DoF();
@@ -27,10 +33,17 @@ public:
     total_d = femur_d + tibia_d;
     max_range_squared = pow(femur_r + tibia_r, 2);
     min_range_squared = pow(femur_r - tibia_r, 2);
+
+    coxa_min = coxa.MinTheta();
+    coxa_max = coxa.MaxTheta();
+    femur_min = femur.MinTheta();
+    femur_max = femur.MaxTheta();
+    tibia_min = tibia.MinTheta();
+    tibia_max = tibia.MaxTheta();
   };
 
-  // Returns 0 if it found a solution, something else if it couldn't.
-  int Solve(double x, double y, double z, double angles[], int num_angles);
+  // Returns positive "score" if a solution was found, or 0 or a negative score if no solution was found.
+  double Solve(double x, double y, double z, double angles[], int num_angles);
 };
 
 #endif // IK_SOLVER_H_
