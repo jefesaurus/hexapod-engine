@@ -51,6 +51,10 @@ public:
     return to_frame * in;
   }
 
+  inline Eigen::Vector3d ToFrame(Eigen::Vector3d in) const {
+    return Vector4dTo3d(to_frame * Vector3dTo4d(in));
+  }
+
   inline const Eigen::Matrix4d& ToFrameMat() const {
     return to_frame;
   }

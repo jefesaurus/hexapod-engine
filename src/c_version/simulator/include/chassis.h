@@ -16,22 +16,18 @@ template <int n_legs, int n_joints>
 class Chassis : public Drawable {
 protected:
   Leg<n_joints> legs[n_legs];
-  Pose leg_poses[n_legs];
   Pose local;
 
 public:
-  Chassis(Leg<n_joints> _legs[n_legs], Pose _leg_poses[n_legs]) : local(0, 0, 0, 0, 0, 0) {
+  Chassis(Leg<n_joints> _legs[n_legs]) : local(0, 0, 0, 0, 0, 0) {
     for (int i = 0; i < n_legs; i++) {
       legs[i] = _legs[i];
-      leg_poses[i] = _leg_poses[i];
     }
   }
 
   inline void SetState(int leg_index, double angles[n_joints]) {
     legs[leg_index].SetState(angles);
   }
-
-
 
   inline Eigen::Vector4d LocalToGlobal(Eigen::Vector4d in) const {
     return local.FromFrame(in);
@@ -42,18 +38,6 @@ public:
   }
   inline void SetPose(Pose pose) {
     local = pose;
-  }
-
-  inline const Pose& LegPose(int leg_index) const {
-    return leg_poses[leg_index];
-  }
-
-  inline Eigen::Vector4d GlobalToLeg(int leg_index, Eigen::Vector4d in) const {
-    return leg_poses[leg_index].ToFrame(local.ToFrame(in));
-  }
-
-  inline Pose LegToGlobal(int leg_index, Pose in) const {
-    return local.FromFrame(leg_poses[leg_index].FromFrame(in));
   }
 
   void SetCommand(LegCommand<n_joints> leg_commands) {
@@ -70,10 +54,8 @@ public:
 
   void Draw(Eigen::Matrix4d to_global) {
     to_global *= local.FromFrameMat();
-    Eigen::Matrix4d leg_to_global;
     for (int i = 0; i < n_legs; i++) {
-      leg_to_global = to_global * leg_poses[i].FromFrameMat();
-      legs[i].Draw(leg_to_global);
+      legs[i].Draw(to_global);
     }
   }
 };
@@ -88,12 +70,11 @@ class ChassisController : public Drawable {
   LegController<n_joints> leg_controllers[n_legs];
 
   // The pose path for the origin of the chassis.
-  PoseGen* chassis_path;
-
-  OffsetPoseGen hip_paths[n_legs];
+  std::unique_ptr<PoseGen> chassis_path;
+  std::unique_ptr<PathGen> leg_paths[n_legs];
 
 public:
-  ChassisController(Leg<n_joints> legs[n_legs], Pose leg_poses[n_legs], std::unique_ptr<IKSolver> solvers[n_legs]) : model(legs, leg_poses), chassis_path(NULL) {
+  ChassisController(Leg<n_joints> legs[n_legs], std::unique_ptr<IKSolver> solvers[n_legs]) : model(legs) {
     // Create the controllers, giving them references to the internal simulation model and the provided solvers.
     for (int i = 0; i < n_legs; i++) {
       leg_controllers[i] = LegController<n_joints>(&legs[i], std::move(solvers[i])); 
@@ -104,12 +85,9 @@ public:
     model.SetPose(pose);
   }
 
-  void SetControl(PoseGen* path) {
-    chassis_path = path;
-
-    for (int i = 0; i < n_legs; i++) {
-      hip_paths[i] = OffsetPoseGen(path, model.LegPose(i));
-    }
+  void SetControl(std::unique_ptr<PoseGen> path) {
+    // TODO reparametrize accounting for arc length to get uniform speed
+    chassis_path = std::move(path);
   }
 
   void UpdateState(double time_elapsed) {
@@ -128,11 +106,8 @@ public:
   void Draw(Eigen::Matrix4d to_global) {
     model.Draw(to_global);
     to_global *= model.GetPose().FromFrameMat();
-    if (chassis_path != NULL) {
+    if (chassis_path != nullptr) {
       chassis_path->Draw(to_global);
-      for (int i = 0; i < n_legs; i++) {
-        hip_paths[i].Draw(to_global);
-      }
     }
   }
 };

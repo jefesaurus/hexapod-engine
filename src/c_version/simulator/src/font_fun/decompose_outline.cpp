@@ -28,7 +28,6 @@ int LineTo(const FT_Vector* to, void* fp) {
 
 int ConicTo(const FT_Vector* p1, const FT_Vector* to, void* fp) {
   DecompositionData* data = (DecompositionData*)fp;
-  //printf("Conic: (%ld, %ld), (%ld, %ld)\n", p1->x + data->pen.x, p1->y + data->pen.y, to->x + data->pen.x, to->y + data->pen.y);
   Eigen::Vector3d p_1(data->last_point.x + data->pen.x, data->last_point.y + data->pen.y, 0.0);
   Eigen::Vector3d p_2(p1->x + data->pen.x, p1->y + data->pen.y, 0.0);
   Eigen::Vector3d p_3(to->x + data->pen.x, to->y + data->pen.y, 0.0);
@@ -40,7 +39,6 @@ int ConicTo(const FT_Vector* p1, const FT_Vector* to, void* fp) {
 
 int CubicTo(const FT_Vector* p1, const FT_Vector* p2, const FT_Vector* to, void* fp) {
   DecompositionData* data = (DecompositionData*)fp;
-  //printf("Cubic: (%ld, %ld), (%ld, %ld), (%ld, %ld)\n", p1->x + data->pen.x, p1->y + data->pen.y, p2->x + data->pen.x, p2->y + data->pen.y, to->x + data->pen.x, to->y + data->pen.y);
   Eigen::Vector3d p_1(data->last_point.x + data->pen.x, data->last_point.y + data->pen.y, 0.0);
   Eigen::Vector3d p_2(p1->x + data->pen.x, p1->y + data->pen.y, 0.0);
   Eigen::Vector3d p_3(p2->x + data->pen.x, p2->y + data->pen.y, 0.0);

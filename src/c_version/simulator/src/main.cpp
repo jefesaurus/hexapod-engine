@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
 
   // Shows the range visualization for a test leg
   //TestRangeVis();
+  //TestPlaneVis();
 
   // Animate one leg in motion.
   //TestAnimationIK();

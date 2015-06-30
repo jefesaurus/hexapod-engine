@@ -211,4 +211,20 @@ public:
   }
 };
 
+// Generates a path representing the input pathgen as viewed by the input posegen.
+class PathFromPose : public PathGen {
+  // The pose-path of the results local frame
+  std::unique_ptr<PoseGen> local;
+  // The input path.
+  std::unique_ptr<PathGen> external;
+
+public:
+  PathFromPose() {};
+  PathFromPose(std::unique_ptr<PoseGen> local, std::unique_ptr<PathGen> external) : local(std::move(local)), external(std::move(external)){}
+  Eigen::Vector3d Value(double progress) {
+    Pose base_pose = local->Value(progress);
+    return Vector4dTo3d(base_pose.ToFrame(Vector3dTo4d(external->Value(progress))));
+  }
+};
+
 #endif // INTERPOLATORS_H_

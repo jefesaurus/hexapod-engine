@@ -37,14 +37,23 @@ friend class LegController<n_joints>;
 protected:
   RevoluteJoint joints[n_joints];
 
+  // The leg's pose relative to some parent coordinate system.
+  // Maybe global, maybe chassis.
+  Pose local_pose;
+
 public:
   Leg() {};
-  Leg(RevoluteJoint _joints[n_joints]) {
+  Leg(RevoluteJoint _joints[n_joints], Pose local_pose) : local_pose(local_pose) {
     DrawLock();
     for (int i = 0; i < n_joints; i++) {
       joints[i] = _joints[i];
     }
     DrawUnlock();
+  }
+  Leg(RevoluteJoint _joints[n_joints]) : local_pose(Pose(0,0,0,0,0,0)) {
+    for (int i = 0; i < n_joints; i++) {
+      joints[i] = _joints[i];
+    }
   }
 
   void SetState(double angles[n_joints]) {
@@ -83,8 +92,8 @@ public:
   }
 
   Eigen::Vector4d ToGlobal(Eigen::Vector4d in) {
-    Eigen::Matrix4d compound = joints[0].DHMat();
-    for (int i = 1; i < n_joints; i++) {
+    Eigen::Matrix4d compound = local_pose.FromFrameMat();
+    for (int i = 0; i < n_joints; i++) {
       compound *= joints[i].DHMat();
     }
     return compound * in;
@@ -99,10 +108,9 @@ public:
   void AllOrigins(Eigen::Vector4d points[n_joints + 1]) {
     DrawLock();
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
-    points[0] = origin;
 
-    Eigen::Matrix4d compound(joints[0].DHMat());
-    for (int i = 1; i < n_joints; i++) {
+    Eigen::Matrix4d compound(local_pose.FromFrameMat());
+    for (int i = 0; i < n_joints; i++) {
       points[i] = compound * origin;
       compound *= joints[i].DHMat();
     }
@@ -111,13 +119,12 @@ public:
   }
 
   // Returns the basic structure of each of the joints.
-  // SLightly More detailed version of AllOrigins.
+  // Slightly More detailed version of AllOrigins.
   void AllJoints(Eigen::Vector4d points[2*n_joints]) {
     DrawLock();
     Eigen::Vector4d origin(0.0, 0.0, 0.0, 1.0);
     Eigen::Vector4d offset(0.0, 0.0, 0.0, 1.0);
-    Eigen::Matrix4d compound(Eigen::Matrix4d::Identity(4, 4));
-
+    Eigen::Matrix4d compound(local_pose.FromFrameMat());
     for (int i = 0; i < n_joints; i++) {
       compound *= joints[i].DHMat();
       offset[0] = -joints[i].R();
@@ -125,6 +132,10 @@ public:
       points[2*i + 1] = compound * origin;
     }
     DrawUnlock();
+  }
+
+  inline const Pose& LegPose() {
+    return local_pose;
   }
 
   // Implement the drawable interface.

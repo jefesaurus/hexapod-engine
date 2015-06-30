@@ -93,11 +93,11 @@ void ChassisPosePathTest() {
   Eigen::Vector3d m1(0.0, 0.0, 0.0);
   Eigen::Vector3d m2(0.0, 0.0, 0.0);
 
-
   PoseSpline path(p1, p2, m1, m2);
 
   ChassisController<6, 3> test_chassis = GetTestChassisController<6>();
-  test_chassis.SetControl(&path);
+  test_chassis.SetPose(Pose(0, 0, 1.0, 0, 0, 0));
+  test_chassis.SetControl(std::unique_ptr<PoseGen>(new PoseSpline(p1, p2, m1, m2)));
 
   Scene scene;
   scene.AddDrawable(&test_chassis);

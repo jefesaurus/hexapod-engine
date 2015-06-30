@@ -64,7 +64,7 @@ class RevoluteJoint : public KinematicPair {
 
 public:
   RevoluteJoint() {};
-  RevoluteJoint(double _min_theta, double _max_theta, double _max_vel, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0), max_angular_velocity(_max_vel), is_active(true), is_moving(false) {};
+  RevoluteJoint(double _min_theta, double _max_theta, double _max_vel, double _alpha, double _r, double _d) : KinematicPair(_alpha, _r, _d, (_min_theta + _max_theta)/2.0), min_theta(_min_theta), max_theta(_max_theta), max_angular_velocity(_max_vel), is_active(true), is_moving(false) {};
   RevoluteJoint(double _alpha, double _r, double _d) : RevoluteJoint(-M_PI, M_PI, DBL_MAX, _alpha, _r, _d) {};
 
   void SetTheta(double theta);

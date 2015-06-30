@@ -12,6 +12,9 @@ double IK3DoF::Solve(double x, double y, double z, double angles[], int num_angl
     // If there is some combined d offset, adjust for it.
     coxa_angle += asin(total_d/sqrt(x*x + y*y));
   }
+  if (coxa_angle < coxa_min || coxa_angle > coxa_max) {
+    return 1;
+  }
 
   // Transform the points to the coordinates at the end of the coxa.
   double xn = x*cos(coxa_angle) + y*sin(coxa_angle) - coxa_r*(pow(sin(coxa_angle), 2) + pow(cos(coxa_angle), 2));
@@ -30,9 +33,21 @@ double IK3DoF::Solve(double x, double y, double z, double angles[], int num_angl
   double theta_a = acos((pow(femur_r,2) + pow(tibia_r,2) - dist)/(2*femur_r * tibia_r));
   double theta_b = acos((pow(femur_r,2) + dist - pow(tibia_r,2))/(2*femur_r * sqrt(dist)));
 
+  double femur_angle = target_dir + theta_b;
+  double tibia_angle = theta_a - M_PI;
+  if ((femur_angle < femur_min || femur_angle > femur_max) ||
+      (tibia_angle < tibia_min || tibia_angle > tibia_max)) {
+    femur_angle = target_dir - theta_b;
+    tibia_angle = M_PI - theta_a;
+    if ((femur_angle < femur_min || femur_angle > femur_max) ||
+        (tibia_angle < tibia_min || tibia_angle > tibia_max)) {
+      return 1;
+    }
+  }
+  // TODO try alternate solution: femur(target_dir - theta_b), tibia(M_PI - theta_a)
   angles[0] = coxa_angle;
-  angles[1] = target_dir + theta_b;
-  angles[2] = theta_a - M_PI;
+  angles[1] = femur_angle;
+  angles[2] = tibia_angle;
   return 0;
 }
 
