@@ -12,8 +12,8 @@
 
 template <int n_joints>
 class RangeVis : public Drawable {
-std::vector<Eigen::Vector3d> reachable_edge;
-std::vector<Eigen::Vector3d> unreachable_edge;
+  std::vector<Eigen::Vector3d> reachable_edge;
+  std::vector<Eigen::Vector3d> unreachable_edge;
 
 public:
   RangeVis(LegController<n_joints>* controller, double min_z, double max_z, double samples_per_unit, double max_range) {
@@ -25,10 +25,10 @@ public:
         Eigen::Vector3d goal = Eigen::Vector3d(0, 0, z);
         Eigen::Vector3d last_goal = goal;
         double angles[n_joints];
-        bool inside = (controller->GetJointCommands(goal, angles) == 0);
+        bool inside = (controller->GetJointCommands(goal, angles) >= 0);
         for (double r = 0; r <= max_range; r += d_r) {
           goal = Eigen::Vector3d(cos(t)*r, sin(t)*r, z);
-          if (controller->GetJointCommands(goal, angles) == 0) {
+          if (controller->GetJointCommands(goal, angles) >= 0) {
             // Hit an edge
             if (!inside) {
               unreachable_edge.push_back(last_goal);
@@ -75,7 +75,7 @@ class PlanarRangeVis : public Drawable {
 
 public:
   PlanarRangeVis(Eigen::Vector3d point, Eigen::Vector3d normal, LegController<n_joints>* controller, double samples_per_unit, double max_range) : point(point), normal(normal) {
-    double d_r = 1.0/samples_per_unit;//*max_range);
+    double d_r = 1.0/samples_per_unit;
     Eigen::Vector3d center = (point.dot(normal) / normal.squaredNorm()) * normal;
     double yaw = atan2(normal[1], normal[0]);
     double pitch = atan2(normal[2], sqrt(normal[0]*normal[0] + normal[1]*normal[1]));
@@ -95,34 +95,20 @@ public:
     double r[plane_query.size()];
     double g[plane_query.size()];
     double b[plane_query.size()];
-    static const double norm_max = 1.0;
-    static const double norm_min = 0;
-    double max_score = 0.0;
+    static const double norm_max = 1.5;
+    static const double norm_min = -1.5;
     for (int i = 0; i < plane_query.size(); i++) {
       plane[i] = to_global * Vector3dTo4d(plane_query[i]);
       double score = plane_query_scores[i];
       if (score < norm_min) {
-        r[i] = 1.0;
-        g[i] = 0.0;
-        b[i] = 1.0;
-        continue;
+        score = norm_min;
       } else if (score > norm_max) {
-        if (score > max_score) {
-          max_score = score;
-        }
         score = norm_max;
       }
-        if (score > max_score) {
-          max_score = score;
-        }
-      GetHeatMapColor(score/norm_max, &r[i], &g[i], &b[i]);
+      GetHeatMapColor((score - norm_min)/(norm_max - norm_min), &r[i], &g[i], &b[i]);
     }
-    printf("%f\n", max_score);
     Points(plane_query.size(), plane, 1, r, g, b);
     center_pose.Draw(to_global);
-    Eigen::Vector3d center_point(center_pose.x, center_pose.y, center_pose.z);
-    Eigen::Vector3d vector_end = center_point + normal;
-    Point(vector_end, 1.0, 0.0, 0.0);
   }
 };
 

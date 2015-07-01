@@ -19,12 +19,12 @@ void LegController<n_joints>::SetControl(PathGen* _path, double _deadline) {
 }
 
 template<int n_joints> 
-int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command) {
+double LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command) {
   double joint_angles[n_joints];
   point = model->local_pose.ToFrame(point);
-  int solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
+  double solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
 
-  if (solved == 0) {
+  if (solved >= 0) {
     double max_eta = fabs(model->joints[0].Theta() - joint_angles[0])/model->joints[0].MaxAngularVelocity();
     for (int i = 1; i < n_joints; i++) {
       max_eta = std::max(max_eta, fabs(model->joints[i].Theta() - joint_angles[i])/model->joints[i].MaxAngularVelocity());
@@ -45,8 +45,8 @@ int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double curr
 
 // Doesn't bother with joint speeds. Just an accessor for the ik solver.
 template<int n_joints> 
-int LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]) {
-  int solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
+double LegController<n_joints>::GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]) {
+  double solved = ik_solver->Solve(point[0], point[1], point[2], joint_angles, n_joints);
   return solved;
 }
 
@@ -74,8 +74,8 @@ void LegController<n_joints>::UpdateState(double time_elapsed, LegCommand<n_join
 
   // Get the next point in the path and attempt to head towards it.
   Eigen::Vector3d next_interpoint = path->Value(progress);
-  int solved = GetJointCommands(next_interpoint, time_elapsed, &command);
-  if (solved == 0) {
+  double solved = GetJointCommands(next_interpoint, time_elapsed, &command);
+  if (solved >= 0) {
     *out_command = command;
     infeasible = false;
   } else {

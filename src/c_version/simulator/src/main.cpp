@@ -32,9 +32,10 @@ int main(int argc, char** argv) {
   //ChassisPosePathTest();
 
   //TestMinimization();
+  TestMaximization();
 
   // Test font drawing
-  FontFun(argc, argv);
+  //FontFun(argc, argv);
 
   return 0;
 }

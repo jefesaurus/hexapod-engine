@@ -13,6 +13,7 @@ public:
 class IK3DoF : public IKSolver {
   double coxa_r, coxa_d, tibia_r, tibia_d, femur_r, femur_d;
   double total_d;
+  double min_range, max_range;
   double max_range_squared;
   double min_range_squared;
 
@@ -31,8 +32,10 @@ public:
     femur_r = femur.R();
     femur_d = femur.D();
     total_d = femur_d + tibia_d;
-    max_range_squared = (femur_r + tibia_r)*(femur_r + tibia_r);
-    min_range_squared = (femur_r - tibia_r)*(femur_r - tibia_r);
+    max_range = fabs(femur_r + tibia_r);
+    min_range = fabs(femur_r - tibia_r);
+    max_range_squared = max_range*max_range;
+    min_range_squared = min_range*min_range;
 
     coxa_min = coxa.MinTheta();
     coxa_max = coxa.MaxTheta();

@@ -33,8 +33,8 @@ void TestIK() {
     goal[1] = RandFloat(-range, range);
     goal[2] = RandFloat(-range, range);
 
-    int solved = test_leg.GetJointCommands(goal, solution);
-    if (solved == 0) {
+    double solved = test_leg.GetJointCommands(goal, solution);
+    if (solved >= 0) {
       test_leg.SetState(solution);
       end_effector = test_leg.GetEndpoint();
       total_error = fabs(goal[0] - end_effector[0]) + fabs(goal[1] - end_effector[1]) + fabs(goal[2] - end_effector[2]);

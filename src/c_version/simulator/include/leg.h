@@ -208,8 +208,8 @@ public:
   void SetState(double angles[n_joints]);
   void SetControl(PathGen* path, double deadline);
 
-  int GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command_to_set);
-  int GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
+  double GetJointCommands(Eigen::Vector3d point, double current_deadline, LegCommand<n_joints>* command_to_set);
+  double GetJointCommands(Eigen::Vector3d point, double joint_angles[n_joints]);
 
   // Updates the state of the controller, not the state of the underlying model.
   void UpdateState(double time_elapsed, LegCommand<n_joints>* out_command);
