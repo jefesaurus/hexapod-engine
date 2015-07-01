@@ -68,6 +68,7 @@ public:
 template <int n_joints>
 class PlanarRangeVis : public Drawable {
   std::vector<Eigen::Vector3d> plane_query;
+  std::vector<double> plane_query_scores;
   Eigen::Vector3d point;
   Eigen::Vector3d normal;
   Pose center_pose;
@@ -83,19 +84,41 @@ public:
     for (double x = -max_range; x < max_range; x += d_r) {
       for (double y = -max_range; y < max_range; y += d_r) {
         Eigen::Vector3d goal = Vector4dTo3d(center_pose.FromFrame(Eigen::Vector4d(0.0, x, y, 1.0)));
-        if (controller->GetJointCommands(goal, angles) == 0) {
-          plane_query.push_back(goal); 
-        }
+        plane_query_scores.push_back(controller->GetJointCommands(goal, angles));
+        plane_query.push_back(goal); 
       }
     }
   }
 
   void Draw(Eigen::Matrix4d to_global) {
     Eigen::Vector4d plane[plane_query.size()];
+    double r[plane_query.size()];
+    double g[plane_query.size()];
+    double b[plane_query.size()];
+    static const double norm_max = 1.0;
+    static const double norm_min = 0;
+    double max_score = 0.0;
     for (int i = 0; i < plane_query.size(); i++) {
       plane[i] = to_global * Vector3dTo4d(plane_query[i]);
+      double score = plane_query_scores[i];
+      if (score < norm_min) {
+        r[i] = 1.0;
+        g[i] = 0.0;
+        b[i] = 1.0;
+        continue;
+      } else if (score > norm_max) {
+        if (score > max_score) {
+          max_score = score;
+        }
+        score = norm_max;
+      }
+        if (score > max_score) {
+          max_score = score;
+        }
+      GetHeatMapColor(score/norm_max, &r[i], &g[i], &b[i]);
     }
-    Points(plane_query.size(), plane, 1, 0.0, 0.0, 1.0);
+    printf("%f\n", max_score);
+    Points(plane_query.size(), plane, 1, r, g, b);
     center_pose.Draw(to_global);
     Eigen::Vector3d center_point(center_pose.x, center_pose.y, center_pose.z);
     Eigen::Vector3d vector_end = center_point + normal;

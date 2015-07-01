@@ -31,8 +31,8 @@ public:
     femur_r = femur.R();
     femur_d = femur.D();
     total_d = femur_d + tibia_d;
-    max_range_squared = pow(femur_r + tibia_r, 2);
-    min_range_squared = pow(femur_r - tibia_r, 2);
+    max_range_squared = (femur_r + tibia_r)*(femur_r + tibia_r);
+    min_range_squared = (femur_r - tibia_r)*(femur_r - tibia_r);
 
     coxa_min = coxa.MinTheta();
     coxa_max = coxa.MaxTheta();
