@@ -73,41 +73,44 @@ class PlanarRangeVis : public Drawable {
   Eigen::Vector3d normal;
   Pose center_pose;
 
+  ColoredGrid grid;
+  static constexpr double norm_max = 1.5;
+  static constexpr double norm_min = 0;
+
 public:
-  PlanarRangeVis(Eigen::Vector3d point, Eigen::Vector3d normal, LegController<n_joints>* controller, double samples_per_unit, double max_range) : point(point), normal(normal) {
-    double d_r = 1.0/samples_per_unit;
+  PlanarRangeVis(Eigen::Vector3d point, Eigen::Vector3d normal, LegController<n_joints>* controller, double samples_per_unit, double max_range) : point(point), normal(normal), grid(samples_per_unit*2*max_range, samples_per_unit*2*max_range) {
     Eigen::Vector3d center = (point.dot(normal) / normal.squaredNorm()) * normal;
     double yaw = atan2(normal[1], normal[0]);
     double pitch = atan2(normal[2], sqrt(normal[0]*normal[0] + normal[1]*normal[1]));
     center_pose = Pose(center[0], center[1], center[2], yaw, pitch, 0);
+
+    int n_samples = samples_per_unit*2*max_range;
+    double delta = 1.0/samples_per_unit;
+    double grid_x, grid_y;
+
+    Eigen::Vector3d goal;
     double angles[n_joints];
-    for (double x = -max_range; x < max_range; x += d_r) {
-      for (double y = -max_range; y < max_range; y += d_r) {
-        Eigen::Vector3d goal = Vector4dTo3d(center_pose.FromFrame(Eigen::Vector4d(0.0, x, y, 1.0)));
-        plane_query_scores.push_back(controller->GetJointCommands(goal, angles));
-        plane_query.push_back(goal); 
+    double r, g, b;
+    for (int x = 0; x < n_samples; x++) {
+      grid_x = -max_range + x*delta;
+      for (int y = 0; y < n_samples; y++) {
+        grid_y = -max_range + y*delta;
+        goal = Vector4dTo3d(center_pose.FromFrame(Eigen::Vector4d(0.0, grid_x, grid_y, 1.0)));
+        double score = controller->GetJointCommands(goal, angles);
+        if (score < norm_min) {
+          grid.SetVal(x, y, goal[0], goal[1], goal[2], 1.0, 0.0, 1.0);
+          continue;
+        } else if (score > norm_max) {
+          score = norm_max;
+        }
+        GetHeatMapColor((score - norm_min)/(norm_max - norm_min), &r, &g, &b);
+        grid.SetVal(x, y, goal[0], goal[1], goal[2], r, g, b);
       }
     }
   }
 
   void Draw(Eigen::Matrix4d to_global) {
-    Eigen::Vector4d plane[plane_query.size()];
-    double r[plane_query.size()];
-    double g[plane_query.size()];
-    double b[plane_query.size()];
-    static const double norm_max = 1.5;
-    static const double norm_min = -1.5;
-    for (int i = 0; i < plane_query.size(); i++) {
-      plane[i] = to_global * Vector3dTo4d(plane_query[i]);
-      double score = plane_query_scores[i];
-      if (score < norm_min) {
-        score = norm_min;
-      } else if (score > norm_max) {
-        score = norm_max;
-      }
-      GetHeatMapColor((score - norm_min)/(norm_max - norm_min), &r[i], &g[i], &b[i]);
-    }
-    Points(plane_query.size(), plane, 1, r, g, b);
+    grid.Draw(to_global);
     center_pose.Draw(to_global);
   }
 };
@@ -115,5 +118,6 @@ public:
 
 void TestRangeVis();
 void TestPlaneVis();
+void TestAllVis();
 
 #endif // RANGE_VIS_H_

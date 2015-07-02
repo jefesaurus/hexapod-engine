@@ -21,7 +21,7 @@ double IK3DoF::Solve(double x, double y, double z, double angles[], int num_angl
   //double zn = x*sin(coxa_angle) - y*cos(coxa_angle);
   double dist = xn*xn + yn*yn;
 
-  double coxa_score = std::min((coxa_angle - coxa_min), (coxa_max - coxa_angle))*sqrt(x*x + y*y + z*z);
+  double coxa_score = std::min((coxa_angle - coxa_min), (coxa_max - coxa_angle))*sqrt(x*x + y*y);
   double range_score = std::min(sqrt(max_range_squared) - sqrt(dist), sqrt(dist) - sqrt(min_range_squared));
   if (range_score < 0) {
     return std::min(coxa_score, range_score);

@@ -116,16 +116,3 @@ void CoordinateAxes(double size, Eigen::Matrix4d to_global) {
   glVertex3f(z[0], z[1], z[2]);
   glEnd();
 }
-
-
-/*
-void LineLoop(int n_segs, Eigen::Vector4d segs[], double r, double g, double b) {
-  glColor3f((float)r, (float)g, (float)b);
-
-  glBegin(GL_LINE_LOOP);
-  for (int i = 0; i < n_segs; i++) {
-    glVertex3f(x[i], y[i], z[i]);
-  }
-  glEnd();
-}
-*/

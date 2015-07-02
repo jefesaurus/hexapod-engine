@@ -66,4 +66,93 @@ inline void Point(Eigen::Vector3d point, double r, double g, double b) {
 
 void CoordinateAxes(double size, Eigen::Matrix4d to_global);
 
+
+class ColoredGrid : Drawable {
+  const int width;
+  const int height;
+
+  double* x;
+  double* y;
+  double* z;
+
+  double* r;
+  double* g;
+  double* b;
+
+  inline int GetIndex(int row, int col) const {
+    return row*width + col;
+  }
+
+  public:
+  ColoredGrid(int width, int height) : width(width), height(height),
+                                       x(new double[width*height]),
+                                       y(new double[width*height]),
+                                       z(new double[width*height]),
+                                       r(new double[width*height]),
+                                       g(new double[width*height]),
+                                       b(new double[width*height]) {
+  }
+
+  ColoredGrid(const ColoredGrid& grid): width(grid.width), height(grid.height) {
+    x = new double[width*height];
+    y = new double[width*height];
+    z = new double[width*height];
+    r = new double[width*height];
+    g = new double[width*height];
+    b = new double[width*height];
+    for (int row = 0; row < height; row++) {
+      for (int col = 0; col < width; col++) {
+        x[GetIndex(row, col)] = grid.x[GetIndex(row, col)];
+        y[GetIndex(row, col)] = grid.y[GetIndex(row, col)];
+        z[GetIndex(row, col)] = grid.z[GetIndex(row, col)];
+        r[GetIndex(row, col)] = grid.r[GetIndex(row, col)];
+        g[GetIndex(row, col)] = grid.g[GetIndex(row, col)];
+        b[GetIndex(row, col)] = grid.b[GetIndex(row, col)];
+      }
+    }
+  }
+
+  ~ColoredGrid() {
+    delete[] x;
+    delete[] y;
+    delete[] z;
+    delete[] r;
+    delete[] g;
+    delete[] b;
+  }
+
+  inline void SetVal(int row, int col, double _x, double _y, double _z, double _r, double _g, double _b) {
+    int index = GetIndex(row, col);
+    x[index] = _x;
+    y[index] = _y;
+    z[index] = _z;
+    r[index] = _r;
+    g[index] = _g;
+    b[index] = _b;
+  }
+
+  void Draw(Eigen::Matrix4d to_global) {
+    Eigen::Vector4d final_point;
+    float normal[3] = {0.0, 0.0, 1.0};
+    int top, bot;
+    for (int row = 0; row < height - 1; row++) {
+      glBegin(GL_TRIANGLE_STRIP);
+      for (int col = 0; col < width; col++) {
+        bot = GetIndex(row+1, col);
+        glNormal3fv(&normal[0]);
+        glColor3f((float)r[bot], (float)g[bot], (float)b[bot]);
+        final_point = to_global*Eigen::Vector4d(x[bot], y[bot], z[bot], 1.0);
+        glVertex3f(final_point[0], final_point[1], final_point[2]);
+
+        top = GetIndex(row, col);
+        glNormal3fv(&normal[0]);
+        glColor3f((float)r[top], (float)g[top], (float)b[top]);
+        final_point = to_global*Eigen::Vector4d(x[top], y[top], z[top], 1.0);
+        glVertex3f(final_point[0], final_point[1], final_point[2]);
+      }
+      glEnd();
+    }
+  }
+};
+
 #endif // DRAWING_PRIMITIVES_H_
